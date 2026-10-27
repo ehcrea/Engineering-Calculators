@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Precision Engineering Calculators</title>
+  <meta name="description" content="Web calculators for precision mechanical design, based on the formulas of the free JPE Precision Point resource. Save, restore and export results as PDF.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231f5ea8'/%3E%3Cpath d='M8 24V8h9a5 5 0 0 1 0 10H8' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    try { var t = localStorage.getItem('pec:v1:theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <button class="btn menu-toggle" id="menuToggle" aria-label="Show calculators">☰</button>
+    <h1>Precision Engineering Calculators <small>formulas from JPE Precision Point</small></h1>
+    <div class="spacer"></div>
+    <div class="toolbar">
+      <button class="btn" id="btnLibrary" title="Saved calculations, JSON import/export">Saved</button>
+      <button class="btn" id="btnTheme" title="Toggle light/dark theme" aria-label="Toggle theme"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar" id="sidebar">
+      <input type="search" id="search" placeholder="Search calculators…" aria-label="Search calculators">
+      <div id="nav"></div>
+    </nav>
+    <main id="main"></main>
+  </div>
+
+  <dialog id="library">
+    <div class="dialog-head">
+      <h3>Saved calculations</h3>
+      <label style="font-size:13px"><input type="checkbox" id="libAll"> all calculators</label>
+      <button class="btn small" id="libClose">Close</button>
+    </div>
+    <div class="dialog-body">
+      <div class="toolbar" style="margin-bottom:10px">
+        <button class="btn small" id="libExport">Export JSON</button>
+        <button class="btn small" id="libImport">Import JSON</button>
+        <input type="file" id="libFile" accept="application/json,.json" hidden>
+      </div>
+      <div id="libList"></div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/core.js"></script>
+  <script src="js/materials.js"></script>
+  <script src="js/sections.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/calculators/flexures.js"></script>
+  <script src="js/calculators/beams.js"></script>
+  <script src="js/calculators/dynamics.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/pdf.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
