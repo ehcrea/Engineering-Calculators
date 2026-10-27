@@ -53,7 +53,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .topbar h1 small { font-weight: 400; color: var(--muted); margin-left: 6px; }
 .topbar .spacer { flex: 1; }
 .topbar .toolbar { flex-wrap: nowrap; }
-.menu-toggle { display: none; }
 
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
@@ -73,6 +72,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
   background: var(--surface); border-right: 1px solid var(--border);
   padding: 12px; position: sticky; top: 53px; height: calc(100vh - 53px); overflow-y: auto;
 }
+/* Desktop: the menu button hides/shows the calculator list to give the page full width. */
+body.nav-collapsed .layout { grid-template-columns: 1fr; }
+body.nav-collapsed .sidebar { display: none; }
 .sidebar input[type="search"] {
   width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg);
 }
@@ -170,9 +172,9 @@ dialog::backdrop { background: rgb(0 0 0 / .35); }
 }
 @media (max-width: 760px) {
   .layout { grid-template-columns: 1fr; }
-  .menu-toggle { display: inline-flex; }
   .sidebar { display: none; position: fixed; top: 53px; left: 0; right: 0; bottom: 0; height: auto; z-index: 9; border-right: 0; }
   body.nav-open .sidebar { display: block; }
+  body.nav-collapsed .layout { grid-template-columns: 1fr; }
   .topbar h1 small { display: none; }
   .topbar { gap: 8px; padding: 10px 12px; }
   .topbar h1 { font-size: 15px; }
