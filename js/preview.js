@@ -263,6 +263,21 @@
     return { xl: xl, xr: xr };
   }
 
+  // Draws a notch block whose upper half is rotated by `rot` degrees about the neck centre (cx, cy):
+  // the rotation is concentrated in the thin neck and both halves stay rigid. Returns the body edges.
+  function bentNotch(s, cx, cy, h, r1, r2, half, c, rot) {
+    var w = h + r1 + (isFinite(r2) ? r2 : 0);
+    var top = s.id + 'ct' + (++uid), bot = s.id + 'cb' + uid;
+    s.add('<clipPath id="' + bot + '"><rect x="' + n(cx - w - 50) + '" y="' + n(cy - 0.6) + '" width="' + n(2 * w + 100) + '" height="' + n(half + 50) + '"/></clipPath>'); // small overlap hides the seam
+    s.add('<clipPath id="' + top + '"><rect x="' + n(cx - w - 50) + '" y="' + n(cy - half - 50) + '" width="' + n(2 * w + 100) + '" height="' + n(half + 50) + '"/></clipPath>');
+    s.add('<g clip-path="url(#' + bot + ')">');
+    var out = hingeNotch(s, cx, cy, h, r1, r2, half, c);
+    s.add('</g><g transform="rotate(' + n(rot) + ' ' + n(cx) + ' ' + n(cy) + ')"><g clip-path="url(#' + top + ')">');
+    hingeNotch(s, cx, cy, h, r1, r2, half, c);
+    s.add('</g></g>');
+    return out;
+  }
+
   function hingePreview(i, res, c, anim) {
     var s = Sketch(460, 320, c), notes = [], lf = loadOf(anim), rot = anim === undefined ? 0 : 6 * lf;
     var d1 = PEC.inf(i.d1), d2 = PEC.inf(i.d2);
@@ -272,19 +287,20 @@
     var hp = vis(i.h, k, 2.5), rp1 = r1 * k, rp2 = isFinite(r2) ? r2 * k : Infinity;
     if (i.h * k < 2.5) notes.push('overview: hinge thickness drawn thicker than scale');
     var half = Math.max(rp1, isFinite(rp2) ? rp2 : 0, 6) + 6;
-    var e = hingeNotch(s, cx, yA, hp, rp1, rp2, half, c);
+    var e = rot ? bentNotch(s, cx, yA, hp, rp1, rp2, half, c, rot) : hingeNotch(s, cx, yA, hp, rp1, rp2, half, c);
     s.ground(e.xl - 20, yA + half, e.xr - e.xl + 40, 18);
     var yB = yA - i.L * k;
+    // The lever is rigid and turns with the upper half of the notch about the neck at A.
     if (rot) s.add('<g transform="rotate(' + n(rot) + ' ' + n(cx) + ' ' + n(yA) + ')">');
     s.rect(e.xl, yB, e.xr - e.xl, yA - half - yB, { stroke: 'none' });
     s.line(e.xl, yB, e.xl, yA - half); s.line(e.xr, yB, e.xr, yA - half); s.line(e.xl, yB, e.xr, yB);
-    s.circle(cx, yA, 3, { fill: c.accent, stroke: 'none' });
-    s.text(cx - 26, yA, 'A', { 'font-weight': 600 });
     s.circle(cx, yB, 3, { fill: c.accent, stroke: 'none' });
     s.text(cx - 26, yB + 2, 'B', { 'font-weight': 600 });
     s.arrow(e.xr + 6, yB + 8, e.xr + 46, yB + 8);
     s.text(e.xr + 30, yB - 4, 'F_z', { fill: c.accent, 'font-style': 'italic' });
     if (rot) s.add('</g>');
+    s.circle(cx, yA, 3, { fill: c.accent, stroke: 'none' });
+    s.text(cx - 26, yA, 'A', { 'font-weight': 600 });
     s.path('M' + n(cx + 28) + ' ' + n(yA - 34) + 'A 44 44 0 0 1 ' + n(cx + 40) + ' ' + n(yA - 14), { stroke: c.accent, 'marker-end': 'url(#' + s.id + 'a)' });
     s.text(cx + 54, yA - 36, 'R_y', { fill: c.accent, 'font-style': 'italic', 'font-size': 11 });
     s.dim(e.xl, yA, e.xl, yB, 'L = ' + mm(i.L), -22);
@@ -295,8 +311,9 @@
     if (i.h * kd < 2.5) notes.push('detail: hinge thickness drawn thicker than scale');
     s.text(dx, 24, 'Notch detail', { 'font-weight': 600 });
     var hf = Math.max(rd1, isFinite(rd2) ? rd2 : 0) + 20;
-    var ed = hingeNotch(s, dx, dy, hd, rd1, rd2, hf, c);
+    var ed = rot ? bentNotch(s, dx, dy, hd, rd1, rd2, hf, c, rot) : hingeNotch(s, dx, dy, hd, rd1, rd2, hf, c);
     s.line(dx - hd / 2, dy, dx + hd / 2, dy, { stroke: c.accent, 'stroke-width': 1.5 });
+    if (rot) s.text(dx, dy + hf + 46, 'rotation happens in the thin neck', { fill: c.accent, 'font-size': 11 });
     s.line(dx, dy + 2, dx, dy + hf + 6, { stroke: c.muted, 'stroke-width': 0.8, 'stroke-dasharray': '3 2' });
     s.text(dx, dy + hf + 14, 'h = ' + mm(i.h), { fill: c.muted, 'font-size': 11 });
     if (r1 > 0) s.dim(ed.xl, dy - rd1, ed.xl, dy + rd1, 'd₁ = ' + mm(2 * r1), 14);
