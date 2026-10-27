@@ -443,39 +443,68 @@
     return function (z) { return f(z) / m; };
   }
 
+  function smooth(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
+
   function bucklingPreview(i, res, c, anim) {
-    var s = Sketch(420, 340, c), notes = [], lf = loadOf(anim);
-    var cx = 130, yb = 300, yt = 90, Lp = yb - yt, k = String(i.k);
+    var s = Sketch(420, 340, c), notes = [], k = String(i.k);
     var ends = { '2': ['clamp', 'free'], '1': ['pin', 'pin'], '1g': ['clamp', 'guide'], '2p': ['pin', 'guide'], '0.7': ['clamp', 'pin'], '0.5': ['clamp', 'clamp'] }[k];
-    s.rect(cx - 4, yt, 8, Lp);
-    // Animated: the load ramps up to F_b; the column stays straight until the load gets there, then bows out.
-    var amp = 40 * Math.max(0, Math.min(1, (lf - 0.88) / 0.12));
-    var f = modeShape(k), pts = [];
-    for (var q = 0; q <= 40; q++) { var z = q / 40; pts.push([cx + amp * f(z), yb - z * Lp]); }
-    s.path(polyline(pts), { stroke: c.accent, 'stroke-dasharray': '5 4' });
-    function end(kind, y, top) {
-      if (kind === 'clamp') s.ground(cx - 30, top ? y - 16 : y, 60, 16);
-      else if (kind === 'pin') {
-        var d = top ? -1 : 1;
-        s.path(polyline([[cx, y], [cx - 10, y + 16 * d], [cx + 10, y + 16 * d]]) + 'z', { fill: c.fill });
-        s.ground(cx - 18, top ? y - 24 : y + 16, 36, 8);
-      } else if (kind === 'guide') {
-        s.rect(cx - 30, y - 16, 60, 16, { fill: c.fill2 });
-        s.circle(cx - 18, y - 21, 4, { fill: c.bg }); s.circle(cx + 18, y - 21, 4, { fill: c.bg });
-        s.ground(cx - 34, y - 37, 68, 12);
-      }
+    // Part of the column that bends like one half sine wave of length L_b = k·L (the pinned–pinned equivalent).
+    // For k = 2 the whole column is only half of that wave.
+    var seg = { '2': [0, 1], '1': [0, 1], '1g': [0, 1], '2p': [0, 1], '0.7': [1 - PI / 4.4934, 1], '0.5': [0.25, 0.75] }[k];
+    var bLab = { '2': '½·L_b', '1': 'L_b = L', '1g': 'L_b = L', '2p': '½·L_b', '0.7': 'L_b = 0.7·L', '0.5': 'L_b = 0.5·L' }[k];
+    var cx = 120, yb = 296, Lp = 196, yt = yb - Lp;
+
+    // Animation: load F ramps up to F_b with the column straight, it buckles at F_b, then the load is removed.
+    var fr = 1, bow = 1, cap = '', fb = resItem(res, 'F_b');
+    if (anim !== undefined) {
+      if (anim < 0.4) { fr = smooth(anim / 0.4); bow = 0; cap = 'F < F_b: the column stays straight'; }
+      else if (anim < 0.7) { fr = 1; bow = smooth((anim - 0.4) / 0.15); cap = 'F = F_b: the column buckles sideways in this mode'; }
+      else { fr = 1 - smooth((anim - 0.7) / 0.25); bow = fr; cap = 'load removed: the column springs back (elastic)'; }
+      if (fb) cap = 'F = ' + PEC.fmt(fr * fb.value, 3) + ' N (' + Math.round(fr * 100) + ' % of F_b) · ' + cap;
     }
-    end(ends[0], yb, false);
-    end(ends[1], yt, true);
-    var topY = yt - { free: 0, clamp: 16, pin: 24, guide: 37 }[ends[1]];
-    s.arrow(cx, topY - 44, cx, topY - 6);
-    s.text(cx + 14, topY - 36, 'F', { fill: c.accent, 'font-style': 'italic' });
-    s.dim(cx - 4, yb, cx - 4, yt, 'L = ' + mm(i.L), -44);
-    s.text(cx + 72, (yt + yb) / 2 + 30, 'buckling mode', { fill: c.accent, 'font-size': 11, 'text-anchor': 'start', x: cx + 48 });
+    var amp = 30 * bow, f = modeShape(k), tip = amp * f(1), q, z, pts = [];
+
+    // Straight reference axis and the (deflected) column, drawn as a solid outlined bar.
+    s.line(cx, yb + 4, cx, yt - 4, { stroke: c.muted, 'stroke-width': 0.8, 'stroke-dasharray': '6 3 1 3' });
+    for (q = 0; q <= 40; q++) { z = q / 40; pts.push([cx + amp * f(z), yb - z * Lp]); }
+    s.path(polyline(pts), { stroke: c.fg, 'stroke-width': 9, 'stroke-linecap': 'butt' });
+    s.path(polyline(pts), { stroke: c.fill2, 'stroke-width': 6, 'stroke-linecap': 'butt' });
+
+    function end(kind, x, y, top) {
+      if (!top) {
+        if (kind === 'clamp') s.ground(x - 30, y, 60, 16);
+        else { s.path(polyline([[x, y], [x - 10, y + 16], [x + 10, y + 16]]) + 'z', { fill: c.fill }); s.ground(x - 18, y + 16, 36, 8); }
+        return 0;
+      }
+      // Top end: the load acts on it, so it must be free to move down; walls show what is restrained sideways.
+      var wall = function () { s.ground(x - 26, y - 34, 8, 34); s.ground(x + 18, y - 34, 8, 34); };
+      if (kind === 'pin') { s.circle(x, y - 6, 6, { fill: c.bg }); wall(); return 12; }
+      if (kind === 'clamp') { s.rect(x - 18, y - 16, 36, 16, { fill: c.fill2 }); wall(); return 16; }
+      if (kind === 'guide') {
+        s.rect(x - 18, y - 16, 36, 16, { fill: c.fill2 });
+        s.text(x - 24, y - 8, 'guided', { fill: c.muted, 'font-size': 10, 'text-anchor': 'end', x: x - 24 });
+        return 16;
+      }
+      return 0;
+    }
+    end(ends[0], cx, yb, false);
+    var topY = yt - end(ends[1], cx + tip, yt, true);
+    // Axial load on the top end; it moves with the end when the end can move sideways.
+    var al = 12 + 30 * fr, ax = cx + tip;
+    s.arrow(ax, topY - 4 - al, ax, topY - 4);
+    s.text(ax + 12, topY - al + 2, 'F', { fill: c.accent, 'font-style': 'italic' });
+
+    // Dimensions: column length L and the buckling length L_b = k·L (one half sine wave).
+    s.dim(cx - 5, yb, cx - 5, yt, 'L = ' + mm(i.L), -40);
+    var bx = cx + 74, y0 = yb - seg[0] * Lp, y1 = yb - seg[1] * Lp;
+    s.dim(bx, y0, bx, y1, bLab, -14, { labelAt: [bx + 36, (y0 + y1) / 2] });
+    if (seg[0] > 0) s.line(cx, y0, bx + 4, y0, { stroke: c.muted, 'stroke-width': 0.6, 'stroke-dasharray': '2 2' });
+    if (seg[1] < 1) s.line(cx, y1, bx + 4, y1, { stroke: c.muted, 'stroke-width': 0.6, 'stroke-dasharray': '2 2' });
+    if (k === '2' || k === '2p') s.text(bx + 36, (y0 + y1) / 2 + 16, 'L_b = 2·L', { fill: c.muted, 'font-size': 11 });
+
     s.text(320, 60, 'Section', { 'font-weight': 600, 'font-size': 11 });
     notes = notes.concat(drawSection(s, i, 320, 140, 90));
-    var fb = resItem(res, 'F_b');
-    var cap = anim === undefined ? '' : (fb ? 'F = ' + PEC.fmt(lf * fb.value, 3) + ' N (' + Math.round(lf * 100) + ' % of F_b): the column stays straight below F_b and bows out sideways once F reaches it' : '');
+    if (anim !== undefined) notes.push('sideways deflection exaggerated');
     return { svg: s.toString(), notes: notes, schematic: true, caption: cap };
   }
 
