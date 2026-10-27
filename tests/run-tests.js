@@ -9,7 +9,7 @@ var vm = require('vm');
 
 var ROOT = path.join(__dirname, '..');
 ['js/core.js', 'js/materials.js', 'js/sections.js', 'js/common.js',
-  'js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js', 'js/preview.js'
+  'js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js', 'js/theory.js', 'js/preview.js'
 ].forEach(function (f) { vm.runInThisContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), { filename: f }); });
 
 var PEC = globalThis.PEC;
@@ -120,6 +120,26 @@ PEC.list.filter(function (d) { return PEC.preview.has(d.id); }).forEach(function
   var def = PEC.get(c[0]), v = Object.assign(PEC.defaults(def), c[1]);
   var p = PEC.preview.render(def.id, PEC.inputsToSI(def, v), PEC.run(def, v), COLORS);
   ok(p && !/NaN|Infinity|undefined/.test(p.svg), 'edge preview ' + c[0] + ' ' + JSON.stringify(c[1]));
+});
+
+// Animated sketches render cleanly over the whole cycle, including the edge geometries above.
+var ANIM_CASES = PEC.list.filter(function (d) { return PEC.preview.animates(d.id); }).map(function (d) { return [d.id, {}]; })
+  .concat([['flexure-hinge', { d2: 0 }], ['cross-spring-pivot', { a: 1.3 }], ['impact-force', { C2: 0 }], ['equivalent-stiffness', { m: 0 }]]);
+ANIM_CASES.forEach(function (c) {
+  var def = PEC.get(c[0]), v = Object.assign(PEC.defaults(def), c[1]), res = PEC.run(def, v);
+  [0, 0.1, 0.25, 0.45, 0.5, 0.55, 0.75, 0.9, 0.999].forEach(function (ph) {
+    var p = PEC.preview.render(def.id, PEC.inputsToSI(def, v), res, COLORS, ph);
+    var tag = c[0] + ' ' + JSON.stringify(c[1]) + ' @' + ph;
+    ok(p && /^<svg[\s\S]*<\/svg>$/.test(p.svg), 'animated preview renders: ' + tag);
+    ok(p && !/NaN|Infinity|undefined/.test(p.svg + (p.caption || '')), 'animated preview has no NaN/Infinity: ' + tag);
+  });
+});
+ok(PEC.preview.render('cross-section', PEC.inputsToSI(PEC.get('cross-section'), PEC.defaults(PEC.get('cross-section'))), PEC.run(PEC.get('cross-section'), PEC.defaults(PEC.get('cross-section'))), COLORS, 0.5) !== null, 'non-animated preview ignores the phase');
+
+// Every calculator has a theory note for the help icon.
+PEC.list.forEach(function (d) {
+  var t = PEC.THEORY[d.id];
+  ok(t && t.intro && t.points && t.points.length && t.assumptions, 'theory note: ' + d.id);
 });
 
 // Formatting

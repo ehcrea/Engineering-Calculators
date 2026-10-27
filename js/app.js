@@ -10,7 +10,7 @@
   var MAT_UNITS = { E: 'GPa', nu: '-', sy: 'MPa', sf: 'MPa', su: 'MPa', rho: 'kg/m³', alpha: 'µm/m·K' };
   var MATERIALS_VIEW = 'materials';
 
-  var state = { def: null, values: null, snapshotId: null, snapshotName: null, lastResult: null };
+  var state = { def: null, values: null, snapshotId: null, snapshotName: null, lastResult: null, anim: null };
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
@@ -18,7 +18,7 @@
 
   // Display symbols with real subscripts: "C_Ax" → C<sub>Ax</sub>.
   function symHtml(s) {
-    return esc(s || '').replace(/_([^\s,()=/·+]+)/g, '<sub>$1</sub>');
+    return esc(s || '').replace(/_([^\s,()=/·+.;:]+)/g, '<sub>$1</sub>');
   }
 
   function toast(msg) {
@@ -133,7 +133,7 @@
     var def = state.def, v = state.values;
     var form = def.inputs.map(function (inp) { return fieldHtml(inp, v); }).join('');
     $('#main').innerHTML =
-      '<div class="calc-head"><h2>' + esc(def.title) + '</h2><p>' + esc(def.description || '') + '</p>' +
+      '<div class="calc-head"><div class="title-row">' + helpHtml(def) + '<h2>' + esc(def.title) + '</h2></div><p>' + esc(def.description || '') + '</p>' +
       '<div class="meta">Source: <a href="' + esc(def.source) + '" target="_blank" rel="noopener">JPE Precision Point – ' + esc(def.title) + '</a>' +
       '<span id="loadedName"></span></div></div>' +
       '<div class="calc-actions toolbar">' +
@@ -151,12 +151,17 @@
       '<input id="f__project" data-id="_project" placeholder="Project / reference" value="' + esc(v._project || '') + '">' +
       '<textarea id="f__notes" data-id="_notes" placeholder="Notes (included in the PDF)">' + esc(v._notes || '') + '</textarea></div>' +
       '</form>' +
-      '<div><div class="card preview" id="previewCard" hidden><h3>Geometry</h3><div id="preview"></div><p class="preview-notes" id="previewNotes"></p></div>' +
+      '<div><div class="card preview" id="previewCard" hidden><div class="preview-head"><h3>Geometry</h3>' +
+      (PEC.preview.animates(def.id) ? '<button class="btn small" id="btnAnim" aria-pressed="false" title="Animate the sketch: load, deflect and release">▶ Animate</button>' : '') +
+      '</div><div id="preview"></div><p class="preview-caption" id="previewCaption" hidden></p><p class="preview-notes" id="previewNotes"></p></div>' +
       '<div class="card"><h3>Results</h3><div id="warnings"></div><table class="results"><tbody id="results"></tbody></table><div class="charts" id="charts"></div></div>' +
       '<div class="card formulas"><h3>Formulas</h3><ul id="formulas"></ul>' +
       '<p class="disclaimer">Formulas from the free <a href="https://www.jpe-innovations.com/precision-point/" target="_blank" rel="noopener">JPE Precision Point</a> resource. This is an independent tool, not affiliated with JPE. Check results before relying on them for critical designs.</p></div></div>' +
       '</div>';
 
+    stopAnim(true);
+    bindHelp();
+    if ($('#btnAnim')) $('#btnAnim').onclick = function () { if (state.anim) stopAnim(); else startAnim(); };
     $('#form').addEventListener('input', onInput);
     $('#form').addEventListener('change', onInput);
     $('#btnSave').onclick = save;
@@ -249,9 +254,9 @@
     return { fg: g('--fg'), muted: g('--muted'), accent: g('--accent'), accentSoft: g('--accent-soft'), fill: g('--sketch-fill'), fill2: g('--sketch-fill-2'), bg: g('--surface') };
   }
 
-  function previewFor(colors) {
+  function previewFor(colors, anim) {
     if (!state.lastResult || !PEC.preview.has(state.def.id)) return null;
-    return PEC.preview.render(state.def.id, PEC.inputsToSI(state.def, state.values), state.lastResult, colors);
+    return PEC.preview.render(state.def.id, PEC.inputsToSI(state.def, state.values), state.lastResult, colors, anim);
   }
 
   function previewNote(p) {
@@ -262,11 +267,90 @@
   function drawPreview() {
     var card = $('#previewCard');
     if (!card) return;
-    var p = previewFor(sketchColors());
+    var anim = state.anim ? state.anim.phase : undefined;
+    var p = previewFor(sketchColors(), anim);
     card.hidden = !p;
     if (!p) return;
     $('#preview').innerHTML = p.svg;
+    var cap = $('#previewCaption');
+    cap.hidden = anim === undefined || !p.caption;
+    cap.innerHTML = anim === undefined ? '' : symHtml(p.caption || '');
     $('#previewNotes').textContent = previewNote(p);
+  }
+
+  // ------------------------------------------------------------------ Sketch animation
+  // One load → deflect → release cycle every ANIM_PERIOD ms; the sketch is re-rendered each frame.
+  var ANIM_PERIOD = 3000;
+  var reducedMotion = root.matchMedia ? root.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+
+  function startAnim() {
+    stopAnim();
+    var a = state.anim = { phase: 0, start: null, raf: 0 };
+    var btn = $('#btnAnim');
+    if (btn) { btn.textContent = '❚❚ Stop'; btn.setAttribute('aria-pressed', 'true'); }
+    function frame(ts) {
+      if (state.anim !== a) return;
+      if (a.start === null) a.start = ts;
+      // With reduced motion, step through a few still frames instead of a smooth loop.
+      var t = (ts - a.start) % ANIM_PERIOD / ANIM_PERIOD;
+      a.phase = reducedMotion.matches ? Math.floor(t * 4) / 4 + 0.125 : t;
+      drawPreview();
+      a.raf = root.requestAnimationFrame(frame);
+    }
+    a.raf = root.requestAnimationFrame(frame);
+  }
+
+  function stopAnim(noRedraw) {
+    var a = state.anim;
+    state.anim = null;
+    if (a) root.cancelAnimationFrame(a.raf);
+    var btn = $('#btnAnim');
+    if (btn) { btn.textContent = '▶ Animate'; btn.setAttribute('aria-pressed', 'false'); }
+    if (a && !noRedraw) drawPreview();
+  }
+
+  // ------------------------------------------------------------------ Theory help ("?" next to the title)
+  function helpHtml(def) {
+    var t = PEC.THEORY && PEC.THEORY[def.id];
+    if (!t) return '';
+    var list = function (items) { return '<ul>' + items.map(function (x) { return '<li>' + symHtml(x) + '</li>'; }).join('') + '</ul>'; };
+    return '<span class="help"><button type="button" class="help-btn" id="helpBtn" aria-label="Theory: how it works" aria-expanded="false" aria-controls="helpPop">?</button>' +
+      '<div class="help-pop" id="helpPop" role="dialog" aria-label="Theory" hidden>' +
+      '<h4>How it works</h4><p>' + symHtml(t.intro) + '</p>' +
+      (t.points && t.points.length ? '<h5>Key points</h5>' + list(t.points) : '') +
+      (t.assumptions && t.assumptions.length ? '<h5>Assumptions</h5>' + list(t.assumptions) : '') +
+      (PEC.preview.animates(def.id) ? '<p class="help-tip">Tip: press ▶ Animate on the sketch to see the motion.</p>' : '') +
+      '<p class="help-src"><a href="' + esc(def.source) + '" target="_blank" rel="noopener">Full article on JPE Precision Point</a></p>' +
+      '</div></span>';
+  }
+
+  function bindHelp() {
+    var btn = $('#helpBtn'), pop = $('#helpPop');
+    if (!btn) return;
+    var wrap = btn.parentNode, timer = 0;
+    function show(v) {
+      clearTimeout(timer);
+      showHelp(v);
+    }
+    function pinned() { return btn.dataset.pinned === '1'; }
+    // Hover opens it (with a short grace period to move the mouse into the panel); a click or tap pins it open.
+    wrap.addEventListener('mouseenter', function () { show(true); });
+    wrap.addEventListener('mouseleave', function () { if (!pinned()) timer = setTimeout(function () { show(false); }, 250); });
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (pinned()) show(false); else { show(true); btn.dataset.pinned = '1'; }
+    });
+    btn.addEventListener('focus', function () { show(true); });
+    btn.addEventListener('blur', function () { if (!pinned()) timer = setTimeout(function () { if (!wrap.contains(document.activeElement)) show(false); }, 150); });
+    pop.addEventListener('click', function (e) { e.stopPropagation(); });
+  }
+
+  function showHelp(v) {
+    var btn = $('#helpBtn'), pop = $('#helpPop');
+    if (!btn) return;
+    pop.hidden = !v;
+    btn.setAttribute('aria-expanded', v ? 'true' : 'false');
+    if (!v) delete btn.dataset.pinned;
   }
 
   function chartsOf(res) { return res ? (res.charts || (res.chart ? [res.chart] : [])) : []; }
@@ -453,6 +537,7 @@
 
   // ------------------------------------------------------------------ Materials reference
   function openMaterials() {
+    stopAnim(true);
     state.def = null;
     store.setLastCalc(MATERIALS_VIEW);
     document.body.classList.remove('nav-open');
@@ -489,6 +574,11 @@
       history.replaceState(null, '', store.toHash(state.def.id, state.values));
     });
     $('#search').addEventListener('input', function (e) { renderNav(e.target.value); });
+    // Close the theory panel on an outside click or Escape.
+    document.addEventListener('click', function () { if ($('#helpPop') && !$('#helpPop').hidden) showHelp(false); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && $('#helpPop') && !$('#helpPop').hidden) { showHelp(false); $('#helpBtn').focus(); }
+    });
     // Menu button: on phones it opens the calculator list as an overlay; on wider screens it
     // collapses the list so the calculator gets the full page width (remembered per browser).
     var mobile = root.matchMedia('(max-width: 760px)');

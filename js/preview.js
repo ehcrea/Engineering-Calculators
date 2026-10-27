@@ -76,6 +76,25 @@
     return s;
   }
 
+  // Animation: `anim` is the cycle phase in [0, 1). Static sketches (anim undefined) show full load;
+  // animated ones ramp the load up and back down so the motion is visible.
+  function loadOf(anim) { return anim === undefined ? 1 : Math.sin(PI * anim); }
+  function resItem(res, sym) { return ((res && res.results) || []).filter(function (r) { return r.sym === sym; })[0]; }
+  // "sym = value unit" for a result, with its value scaled by `f` (the current load fraction).
+  function resText(res, sym, f) {
+    var r = resItem(res, sym);
+    if (!r || typeof r.value !== 'number') return '';
+    var v = (f === undefined ? 1 : f) * r.value;
+    return sym + ' = ' + PEC.fmt(r.unit && r.unit !== '-' ? PEC.fromSI(v, r.unit) : v, 3) + (r.unit && r.unit !== '-' ? ' ' + r.unit : '');
+  }
+  function caption(f, parts) {
+    return ['load ' + Math.round(f * 100) + ' %'].concat(parts.filter(Boolean)).join(' · ');
+  }
+  function rotPt(p, o, deg) {
+    var a = deg * PI / 180, cs = Math.cos(a), sn = Math.sin(a), dx = p[0] - o[0], dy = p[1] - o[1];
+    return [o[0] + dx * cs - dy * sn, o[1] + dx * sn + dy * cs];
+  }
+
   function polyline(pts) {
     return pts.map(function (p, k) { return (k ? 'L' : 'M') + n(p[0]) + ' ' + n(p[1]); }).join(' ');
   }
@@ -147,15 +166,15 @@
   }
 
   // ---------------------------------------------------------------- leaf / rod spring
-  function springPreview(i, res, c, rod) {
-    var s = Sketch(440, 320, c), notes = [];
+  function springPreview(i, res, c, rod, anim) {
+    var s = Sketch(440, 320, c), notes = [], lf = loadOf(anim);
     var L = i.L, thick = rod ? i.d : i.t, S = i.shape === 'S';
     var k = 210 / L, xc = 120, yb = 270, yt = yb - L * k;
     var tp = vis(thick, k, 3);
     if (thick * k < 3) notes.push((rod ? 'diameter' : 'thickness') + ' drawn thicker than scale');
     // Exaggerated deflection for visibility
-    var uxPx = Math.min(Math.max(i.ux * k, 18), 55);
-    if (Math.abs(uxPx - i.ux * k) > 0.5) notes.push('deflection ' + (i.ux * k < uxPx ? 'exaggerated' : 'reduced') + ' for clarity');
+    var uxFull = Math.min(Math.max(i.ux * k, 18), 55), uxPx = uxFull * lf;
+    if (Math.abs(uxFull - i.ux * k) > 0.5) notes.push('deflection ' + (i.ux * k < uxFull ? 'exaggerated' : 'reduced') + ' for clarity');
     var shapeFn = S ? function (z) { return 3 * z * z - 2 * z * z * z; } : function (z) { return (3 * z * z - z * z * z) / 2; };
 
     s.ground(xc - 60, yb, 120, 22);
@@ -167,12 +186,12 @@
     s.path(polyline(pts), { stroke: c.accent, 'stroke-dasharray': '5 4', 'stroke-width': 1.5 });
     if (S) s.rect(xc - 45 + uxPx, yt - 22, 90, 22, { fill: 'none', stroke: c.accent, 'stroke-dasharray': '5 4' });
     // Force
-    var fy = S ? yt - 11 : yt;
-    s.arrow(xc + uxPx + (S ? 45 : 0) + 8, fy, xc + uxPx + (S ? 45 : 0) + 48, fy);
-    s.text(xc + uxPx + (S ? 45 : 0) + 30, fy - 12, 'Fₓ', { fill: c.accent, 'font-style': 'italic' });
+    var fy = S ? yt - 11 : yt, fx = xc + uxPx + (S ? 45 : 0) + 8;
+    if (lf > 0.05) s.arrow(fx, fy, fx + 40 * lf, fy);
+    s.text(fx + 22, fy - 12, 'Fₓ', { fill: c.accent, 'font-style': 'italic' });
     // Dimensions
     s.dim(xc - tp / 2, yb, xc - tp / 2, yt, 'L = ' + mm(L), -42);
-    s.dim(xc, S ? yt - 30 : yt - 8, xc + uxPx, S ? yt - 30 : yt - 8, 'uₓ = ' + mm(i.ux), -14);
+    s.dim(xc, S ? yt - 30 : yt - 8, xc + uxFull, S ? yt - 30 : yt - 8, 'uₓ = ' + mm(i.ux), -14);
     s.text(xc, yb + 34, S ? 'S-shape (end guided)' : 'C-shape (end free)', { fill: c.muted, 'font-size': 11 });
 
     // Cross-section (view from above)
@@ -190,12 +209,12 @@
     }
     s.arrow(sx - 70, sy + 130, sx - 30, sy + 130, { stroke: c.muted, 'stroke-width': 1 });
     s.text(sx - 20, sy + 130, 'x', { fill: c.muted, 'font-style': 'italic' });
-    return { svg: s.toString(), notes: notes };
+    return { svg: s.toString(), notes: notes, caption: caption(lf, ['uₓ = ' + mm(lf * i.ux), resText(res, 'Fₓ', lf), resText(res, 'σ_max', lf)]) };
   }
 
   // ---------------------------------------------------------------- folded leaf spring
-  function foldedPreview(i, res, c) {
-    var s = Sketch(420, 320, c), notes = [];
+  function foldedPreview(i, res, c, anim) {
+    var s = Sketch(420, 320, c), notes = [], lf = loadOf(anim);
     var k = 200 / Math.max(i.L1, i.L2), x0 = 90, y0 = 270;
     var tp = vis(i.t, k, 3);
     if (i.t * k < 3) notes.push('thickness drawn thicker than scale');
@@ -214,13 +233,23 @@
       var ph = dxs.value;
       s.line(px, py, px + Math.cos(ph) * 40, py - Math.sin(ph) * 40, { stroke: c.muted, 'stroke-dasharray': '4 3', 'marker-end': 'url(#' + s.id + 'd)' });
       s.text(px + Math.cos(ph) * 50, py - Math.sin(ph) * 50 + 10, 'δs', { fill: c.muted, 'font-size': 11, 'font-style': 'italic' });
+      if (anim !== undefined) {
+        // Deflected legs (exaggerated): the corner follows part of the end displacement.
+        var ddx = Math.cos(ph) * 30 * lf, ddy = -Math.sin(ph) * 30 * lf;
+        var cpts = [], q;
+        for (q = 0; q <= 20; q++) { var z = q / 20; cpts.push([x0 + ddx * 0.5 * z * z, y0 - (y0 - yt) * z + ddy * 0.5 * z * z]); }
+        for (q = 1; q <= 20; q++) { var w = q / 20; cpts.push([x0 + ddx * 0.5 + (xe - x0) * w + ddx * 0.5 * w, yt + ddy * (0.5 + 0.5 * w)]); }
+        s.path(polyline(cpts), { stroke: c.accent, 'stroke-dasharray': '5 4' });
+        s.rect(xe + ddx, yt - 14 + ddy, 26, 28, { fill: 'none', stroke: c.accent, 'stroke-dasharray': '5 4' });
+      }
     }
     s.dim(x0, y0, x0, yt, 'L₁ = ' + mm(i.L1), 30);
     s.dim(x0, yt, xe, yt, 'L₂ = ' + mm(i.L2), -34);
     s.text(xe - (xe - x0) / 2, y0 + 34, 'width b = ' + mm(i.b) + ', thickness t = ' + mm(i.t), { fill: c.muted, 'font-size': 11 });
     s.arrow(330, 290, 370, 290, { stroke: c.muted, 'stroke-width': 1 }); s.text(380, 290, 'x', { fill: c.muted, 'font-style': 'italic' });
     s.arrow(330, 290, 330, 250, { stroke: c.muted, 'stroke-width': 1 }); s.text(330, 240, 'y', { fill: c.muted, 'font-style': 'italic' });
-    return { svg: s.toString(), notes: notes };
+    if (anim !== undefined) notes.push('deflection exaggerated for clarity');
+    return { svg: s.toString(), notes: notes, caption: caption(lf, [resText(res, 'δs_abs', lf), resText(res, 'σ_max', lf)]) };
   }
 
   // ---------------------------------------------------------------- notch hinge
@@ -234,8 +263,8 @@
     return { xl: xl, xr: xr };
   }
 
-  function hingePreview(i, res, c) {
-    var s = Sketch(460, 320, c), notes = [];
+  function hingePreview(i, res, c, anim) {
+    var s = Sketch(460, 320, c), notes = [], lf = loadOf(anim), rot = anim === undefined ? 0 : 6 * lf;
     var d1 = PEC.inf(i.d1), d2 = PEC.inf(i.d2);
     var r1 = isFinite(d1) ? d1 / 2 : 0, r2 = isFinite(d2) ? d2 / 2 : Infinity;
     // Overview: base, hinge at A, lever of length L to point B.
@@ -246,6 +275,7 @@
     var e = hingeNotch(s, cx, yA, hp, rp1, rp2, half, c);
     s.ground(e.xl - 20, yA + half, e.xr - e.xl + 40, 18);
     var yB = yA - i.L * k;
+    if (rot) s.add('<g transform="rotate(' + n(rot) + ' ' + n(cx) + ' ' + n(yA) + ')">');
     s.rect(e.xl, yB, e.xr - e.xl, yA - half - yB, { stroke: 'none' });
     s.line(e.xl, yB, e.xl, yA - half); s.line(e.xr, yB, e.xr, yA - half); s.line(e.xl, yB, e.xr, yB);
     s.circle(cx, yA, 3, { fill: c.accent, stroke: 'none' });
@@ -254,6 +284,7 @@
     s.text(cx - 26, yB + 2, 'B', { 'font-weight': 600 });
     s.arrow(e.xr + 6, yB + 8, e.xr + 46, yB + 8);
     s.text(e.xr + 30, yB - 4, 'F_z', { fill: c.accent, 'font-style': 'italic' });
+    if (rot) s.add('</g>');
     s.path('M' + n(cx + 28) + ' ' + n(yA - 34) + 'A 44 44 0 0 1 ' + n(cx + 40) + ' ' + n(yA - 14), { stroke: c.accent, 'marker-end': 'url(#' + s.id + 'a)' });
     s.text(cx + 54, yA - 36, 'R_y', { fill: c.accent, 'font-style': 'italic', 'font-size': 11 });
     s.dim(e.xl, yA, e.xl, yB, 'L = ' + mm(i.L), -22);
@@ -272,12 +303,13 @@
     if (isFinite(r2) && r2 > 0) s.dim(ed.xr, dy - rd2, ed.xr, dy + rd2, 'd₂ = ' + mm(2 * r2), -14);
     else s.text(ed.xr + 16, dy, 'flat', { fill: c.muted, 'font-size': 11, transform: 'rotate(90 ' + n(ed.xr + 16) + ' ' + n(dy) + ')' });
     s.text(dx, dy + hf + 30, 'width t = ' + mm(i.t) + ' (into page)', { fill: c.muted, 'font-size': 11 });
-    return { svg: s.toString(), notes: notes };
+    if (rot) notes.push('rotation exaggerated for clarity');
+    return { svg: s.toString(), notes: notes, caption: caption(lf, [resText(res, 'F_z', lf), 'R_y = ' + PEC.fmt(lf * i.Ry * 1e3, 3) + ' mrad', resText(res, 'σ_max', lf)]) };
   }
 
   // ---------------------------------------------------------------- cross spring pivot
-  function pivotPreview(i, res, c) {
-    var s = Sketch(400, 320, c), notes = [];
+  function pivotPreview(i, res, c, anim) {
+    var s = Sketch(400, 320, c), notes = [], lf = loadOf(anim), rot = anim === undefined ? 0 : 8 * lf;
     var k = 190 / i.L, Lp = i.L * k, a = i.a, cx = 200, yb = 260;
     var tp = vis(i.t, k, 3);
     if (i.t * k < 3) notes.push('thickness drawn thicker than scale');
@@ -286,12 +318,26 @@
     var p1 = [cx - a * Lp * cs, yb], p2 = [cx + a * Lp * cs, yb];
     var e1 = [p1[0] + Lp * cs, yb - Lp * sn], e2 = [p2[0] - Lp * cs, yb - Lp * sn];
     var pole = [cx, yb - a * Lp * sn];
+    // Animated: the top body rotates about the pole and the springs follow (approximately).
+    var yTop = e1[1];
+    if (rot) { e1 = rotPt(e1, pole, rot); e2 = rotPt(e2, pole, rot); }
     var xs = [p1[0], p2[0], e1[0], e2[0]];
     var gx = Math.min.apply(null, xs) - 20, gw = Math.max.apply(null, xs) - gx + 20;
     s.ground(gx, yb, gw, 18);
-    s.rect(gx, e1[1] - 20, gw, 20, { fill: c.fill2 });
-    s.line(p1[0], p1[1], e1[0], e1[1], { 'stroke-width': tp, stroke: c.fg, 'stroke-linecap': 'butt' });
-    s.line(p2[0], p2[1], e2[0], e2[1], { 'stroke-width': tp, stroke: c.fg, 'stroke-linecap': 'butt' });
+    if (rot) s.add('<g transform="rotate(' + n(rot) + ' ' + n(pole[0]) + ' ' + n(pole[1]) + ')">');
+    s.rect(gx, yTop - 20, gw, 20, { fill: c.fill2 });
+    if (rot) s.add('</g>');
+    if (rot) {
+      // Bent springs: a cubic that leaves the base at the original angle and meets the body at the rotated one.
+      [[p1, e1, 1], [p2, e2, -1]].forEach(function (sp) {
+        var b = sp[0], e = sp[1], raw = [sp[2] * Lp * cs / 3, -Lp * sn / 3], rr = rotPt(raw, [0, 0], rot);
+        var c1 = [b[0] + raw[0], b[1] + raw[1]], c2 = [e[0] - rr[0], e[1] - rr[1]];
+        s.path('M' + n(b[0]) + ' ' + n(b[1]) + 'C' + n(c1[0]) + ' ' + n(c1[1]) + ' ' + n(c2[0]) + ' ' + n(c2[1]) + ' ' + n(e[0]) + ' ' + n(e[1]), { 'stroke-width': tp, stroke: c.fg });
+      });
+    } else {
+      s.line(p1[0], p1[1], e1[0], e1[1], { 'stroke-width': tp, stroke: c.fg, 'stroke-linecap': 'butt' });
+      s.line(p2[0], p2[1], e2[0], e2[1], { 'stroke-width': tp, stroke: c.fg, 'stroke-linecap': 'butt' });
+    }
     if (a < 0 || a > 1) {
       var end1 = a < 0 ? p1 : e1, end2 = a < 0 ? p2 : e2;
       s.line(end1[0], end1[1], pole[0], pole[1], { stroke: c.muted, 'stroke-dasharray': '4 3' });
@@ -302,7 +348,8 @@
     s.dim(p1[0], p1[1], e1[0], e1[1], 'L = ' + mm(i.L), -28);
     s.text(cx, yb + 36, 'w = ' + mm(i.w) + ', t = ' + mm(i.t) + ' per leaf spring', { fill: c.muted, 'font-size': 11 });
     if (pole[1] < 20 || pole[1] > 300) notes.push('pole lies outside the drawing');
-    return { svg: s.toString(), notes: notes };
+    if (rot) notes.push('rotation exaggerated for clarity');
+    return { svg: s.toString(), notes: notes, caption: caption(lf, ['θ = ' + PEC.fmt(lf * i.theta * 1e3, 3) + ' mrad', resText(res, 'M', lf), resText(res, 'σ', lf)]) };
   }
 
   // ---------------------------------------------------------------- beam bending
@@ -321,8 +368,8 @@
     }
   }
 
-  function bendingPreview(i, res, c) {
-    var s = Sketch(460, 300, c), notes = [];
+  function bendingPreview(i, res, c, anim) {
+    var s = Sketch(460, 300, c), notes = [], lf = loadOf(anim);
     var x0 = 50, x1 = 330, y = 120, Lp = x1 - x0;
     var sup = {
       'cant-F': ['clamp', null], 'cant-M': ['clamp', null], 'cant-q': ['clamp', null],
@@ -337,21 +384,23 @@
     // Loads
     if (/-F$/.test(i.case)) {
       var xf = i.case === 'ss-F' ? x0 + Lp * Math.min(Math.max(i.a / i.L, 0), 1) : x1;
-      s.arrow(xf, y - 48, xf, y - 8); s.text(xf === x1 ? xf - 14 : xf + 12, y - 40, 'F', { fill: c.accent, 'font-style': 'italic' });
+      if (lf > 0.05) s.arrow(xf, y - 8 - 40 * lf, xf, y - 8);
+      s.text(xf === x1 ? xf - 14 : xf + 12, y - 40, 'F', { fill: c.accent, 'font-style': 'italic' });
       if (i.case === 'ss-F') s.dim(x0, y, xf, y, 'a = ' + mm(i.a), -60);
     } else if (/-M$/.test(i.case)) {
-      s.path('M' + n(x1 - 14) + ' ' + n(y - 24) + 'A 22 22 0 1 1 ' + n(x1 + 12) + ' ' + n(y + 20), { stroke: c.accent, 'stroke-width': 2, 'marker-end': 'url(#' + s.id + 'a)' });
+      s.path('M' + n(x1 - 14) + ' ' + n(y - 24) + 'A 22 22 0 1 1 ' + n(x1 + 12) + ' ' + n(y + 20), { stroke: c.accent, 'stroke-width': 2, 'marker-end': 'url(#' + s.id + 'a)', opacity: n(0.25 + 0.75 * lf) });
       s.text(x1 + 30, y - 26, 'M', { fill: c.accent, 'font-style': 'italic' });
     } else {
-      for (var q = 0; q <= 10; q++) { var xq = x0 + Lp * q / 10; s.arrow(xq, y - 34, xq, y - 8, { 'stroke-width': 1.3 }); }
-      s.line(x0, y - 34, x1, y - 34, { stroke: c.accent, 'stroke-width': 1.3 });
+      var qh = 26 * lf;
+      if (lf > 0.05) for (var q = 0; q <= 10; q++) { var xq = x0 + Lp * q / 10; s.arrow(xq, y - 8 - qh, xq, y - 8, { 'stroke-width': 1.3 }); }
+      s.line(x0, y - 8 - qh, x1, y - 8 - qh, { stroke: c.accent, 'stroke-width': 1.3 });
       s.text((x0 + x1) / 2, y - 46, 'q', { fill: c.accent, 'font-style': 'italic' });
     }
     // Deflection curve (exaggerated)
     var ch = res.chart;
     if (ch) {
       var vals = ch.series[0].values, mx = Math.max.apply(null, vals.map(Math.abs)) || 1;
-      var pts = vals.map(function (v, k) { return [x0 + Lp * k / (vals.length - 1), y + v / mx * 40]; });
+      var pts = vals.map(function (v, k) { return [x0 + Lp * k / (vals.length - 1), y + v / mx * 40 * lf]; });
       s.path(polyline(pts), { stroke: c.accent, 'stroke-dasharray': '5 4' });
       s.text((x0 + x1) / 2, y + 58, 'deflected shape (exaggerated)', { fill: c.accent, 'font-size': 11 });
     }
@@ -360,7 +409,7 @@
     s.text(400, 190, 'Section', { 'font-weight': 600, 'font-size': 11 });
     notes = notes.concat(drawSection(s, i, 400, 245, 50, { dims: false }));
     s.text(400, 290, i.axis === 'y' ? 'bending about y' : 'bending about x', { fill: c.muted, 'font-size': 10 });
-    return { svg: s.toString(), notes: notes, schematic: true };
+    return { svg: s.toString(), notes: notes, schematic: true, caption: caption(lf, [resText(res, 'δy_max', lf), resText(res, 'σ_max', lf)]) };
   }
 
   // ---------------------------------------------------------------- buckling
@@ -377,13 +426,15 @@
     return function (z) { return f(z) / m; };
   }
 
-  function bucklingPreview(i, res, c) {
-    var s = Sketch(420, 340, c), notes = [];
+  function bucklingPreview(i, res, c, anim) {
+    var s = Sketch(420, 340, c), notes = [], lf = loadOf(anim);
     var cx = 130, yb = 300, yt = 90, Lp = yb - yt, k = String(i.k);
     var ends = { '2': ['clamp', 'free'], '1': ['pin', 'pin'], '1g': ['clamp', 'guide'], '2p': ['pin', 'guide'], '0.7': ['clamp', 'pin'], '0.5': ['clamp', 'clamp'] }[k];
     s.rect(cx - 4, yt, 8, Lp);
+    // Animated: the load ramps up to F_b; the column stays straight until the load gets there, then bows out.
+    var amp = 40 * Math.max(0, Math.min(1, (lf - 0.88) / 0.12));
     var f = modeShape(k), pts = [];
-    for (var q = 0; q <= 40; q++) { var z = q / 40; pts.push([cx + 40 * f(z), yb - z * Lp]); }
+    for (var q = 0; q <= 40; q++) { var z = q / 40; pts.push([cx + amp * f(z), yb - z * Lp]); }
     s.path(polyline(pts), { stroke: c.accent, 'stroke-dasharray': '5 4' });
     function end(kind, y, top) {
       if (kind === 'clamp') s.ground(cx - 30, top ? y - 16 : y, 60, 16);
@@ -406,11 +457,13 @@
     s.text(cx + 72, (yt + yb) / 2 + 30, 'buckling mode', { fill: c.accent, 'font-size': 11, 'text-anchor': 'start', x: cx + 48 });
     s.text(320, 60, 'Section', { 'font-weight': 600, 'font-size': 11 });
     notes = notes.concat(drawSection(s, i, 320, 140, 90));
-    return { svg: s.toString(), notes: notes, schematic: true };
+    var fb = resItem(res, 'F_b');
+    var cap = anim === undefined ? '' : (fb ? 'F = ' + PEC.fmt(lf * fb.value, 3) + ' N (' + Math.round(lf * 100) + ' % of F_b): the column stays straight below F_b and bows out sideways once F reaches it' : '');
+    return { svg: s.toString(), notes: notes, schematic: true, caption: cap };
   }
 
   // ---------------------------------------------------------------- Hertz contact
-  function hertzView(s, cx, cy, rTop, rBot, label, kpx) {
+  function hertzView(s, cx, cy, rTop, rBot, label, kpx, dz, flat) {
     var c = s.c, w = 70;
     function body(r, top) {
       var d = top ? -1 : 1; // direction away from the contact
@@ -433,31 +486,44 @@
       }
     }
     body(rBot, false);
+    // Animated: the top body moves down by the (exaggerated) approach and the contact flattens.
+    if (dz) s.add('<g transform="translate(0 ' + n(dz) + ')">');
     body(rTop, true);
+    if (dz) s.add('</g>');
+    if (flat) s.line(cx - flat, cy + (dz || 0) / 2, cx + flat, cy + (dz || 0) / 2, { stroke: c.accent, 'stroke-width': 3 });
     s.text(cx, cy + 100, label, { fill: c.muted, 'font-size': 11 });
   }
 
-  function hertzPreview(i, res, c) {
-    var s = Sketch(460, 300, c), notes = [];
+  function hertzPreview(i, res, c, anim) {
+    var s = Sketch(460, 300, c), notes = [], lf = loadOf(anim);
+    var dz = anim === undefined ? 0 : 6 * Math.pow(lf, 2 / 3), fl = anim === undefined ? 0 : 10 * Math.cbrt(lf);
     var rs = [i.r1x, i.r1y, i.r2x, i.r2y].map(PEC.inf).filter(isFinite).map(Math.abs);
     var kpx = rs.length ? 40 / Math.min.apply(null, rs) : 1;
     function lab(r) { r = PEC.inf(r); return isFinite(r) ? PEC.fmt(r * 1e3, 3) + ' mm' : 'flat'; }
-    hertzView(s, 110, 140, PEC.inf(i.r1x), PEC.inf(i.r2x), 'x–z: r₁ₓ = ' + lab(i.r1x) + ', r₂ₓ = ' + lab(i.r2x), kpx);
-    hertzView(s, 300, 140, PEC.inf(i.r1y), PEC.inf(i.r2y), 'y–z: r₁ᵧ = ' + lab(i.r1y) + ', r₂ᵧ = ' + lab(i.r2y), kpx);
-    s.arrow(205, 40, 205, 80); s.text(218, 40, 'F', { fill: c.accent, 'font-style': 'italic' });
+    hertzView(s, 110, 140, PEC.inf(i.r1x), PEC.inf(i.r2x), 'x–z: r₁ₓ = ' + lab(i.r1x) + ', r₂ₓ = ' + lab(i.r2x), kpx, dz, fl);
+    hertzView(s, 300, 140, PEC.inf(i.r1y), PEC.inf(i.r2y), 'y–z: r₁ᵧ = ' + lab(i.r1y) + ', r₂ᵧ = ' + lab(i.r2y), kpx, dz, fl);
+    if (lf > 0.05) s.arrow(205, 80 - 40 * lf, 205, 80);
+    s.text(218, 40, 'F', { fill: c.accent, 'font-style': 'italic' });
     s.text(110, 18, 'body 1 (top), body 2 (bottom)', { fill: c.muted, 'font-size': 11, 'text-anchor': 'start', x: 20 });
     if (Math.abs(i.theta) > 1e-9) notes.push('views drawn without the misalignment angle θ');
     notes.push('contact ellipse enlarged');
     // Contact ellipse
     var A = res.results.filter(function (r) { return r.sym === 'a'; })[0], B = res.results.filter(function (r) { return r.sym === 'b'; })[0];
     if (A && B && A.value > 0) {
-      var ex = 410, ey = 140, ka = 30 / A.value;
+      var ex = 410, ey = 140, ka = 30 / A.value, ce = Math.cbrt(lf);
       s.text(ex, 60, 'Contact', { 'font-weight': 600, 'font-size': 11 });
-      s.add('<ellipse' + attrs({ cx: ex, cy: ey, rx: n(30), ry: n(Math.max(B.value * ka, 1.5)), fill: c.accentSoft, stroke: c.accent, 'stroke-width': 1.5 }) + '/>');
+      s.add('<ellipse' + attrs({ cx: ex, cy: ey, rx: n(30 * ce), ry: n(Math.max(B.value * ka * ce, 1.5)), fill: c.accentSoft, stroke: c.accent, 'stroke-width': 1.5 }) + '/>');
       s.text(ex, ey + 50, '2a = ' + PEC.fmt(2 * A.value * 1e6, 3) + ' µm', { fill: c.muted, 'font-size': 10 });
       s.text(ex, ey + 64, '2b = ' + PEC.fmt(2 * B.value * 1e6, 3) + ' µm', { fill: c.muted, 'font-size': 10 });
     }
-    return { svg: s.toString(), notes: notes };
+    if (dz) notes.push('approach exaggerated for clarity');
+    // Hertz: δ ∝ F^(2/3), contact size ∝ F^(1/3), pressure ∝ F^(1/3).
+    var dl = resItem(res, 'δ'), pm = resItem(res, 'σ_max');
+    return { svg: s.toString(), notes: notes, caption: caption(lf, [
+      'F = ' + PEC.fmt(lf * i.F, 3) + ' N',
+      dl ? 'δ = ' + PEC.fmt(PEC.fromSI(Math.pow(lf, 2 / 3) * dl.value, 'µm'), 3) + ' µm' : '',
+      pm ? 'σ_max = ' + PEC.fmt(PEC.fromSI(Math.cbrt(lf) * pm.value, 'MPa'), 3) + ' MPa' : ''
+    ]) };
   }
 
   // ---------------------------------------------------------------- springs, impact, bolt stack
@@ -472,52 +538,91 @@
     return polyline(pts);
   }
 
-  function stiffnessPreview(i, res, c) {
+  function stiffnessPreview(i, res, c, anim) {
     var cs = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].map(function (k, q) { return { v: i[k], name: 'C' + '₁₂₃₄₅₆'[q] }; })
       .filter(function (o) { return o.v !== null && !isNaN(o.v) && o.v !== 0; });
     if (!cs.length) return null;
     var s = Sketch(420, 260, c);
     s.ground(30, 20, 360, 16);
     var mass = i.m > 0;
+    // Animated: free vibration of the mass on the springs (amplitude exaggerated).
+    var off = anim === undefined ? 0 : 14 * Math.sin(2 * PI * anim);
     if (i.mode === 'series') {
-      var top = 36, seg = 150 / cs.length, x = 210;
+      var top = 36, seg = (150 + off) / cs.length, x = 210;
       cs.forEach(function (o, q) {
         var y1 = top + q * seg, y2 = y1 + seg - 6;
         s.path(zigzag(x, y1, x, y2, 4), { 'stroke-width': 1.5 });
         s.text(x + 60, (y1 + y2) / 2, o.name + ' = ' + PEC.fmt(o.v / 1e6, 3) + ' N/µm', { 'font-size': 11, 'text-anchor': 'start', x: x + 20 });
         if (q < cs.length - 1) s.rect(x - 14, y2, 28, 6, { fill: c.fill2 });
       });
-      s.rect(x - 50, top + 150 - 6, 100, 34, { fill: mass ? c.fill2 : c.fill });
-      if (mass) s.text(x, top + 161, 'm = ' + PEC.fmt(i.m, 3) + ' kg', { 'font-size': 11 });
+      s.rect(x - 50, top + 150 + off - 6, 100, 34, { fill: mass ? c.fill2 : c.fill });
+      if (mass) s.text(x, top + 161 + off, 'm = ' + PEC.fmt(i.m, 3) + ' kg', { 'font-size': 11 });
     } else {
       var w = 300 / cs.length;
       cs.forEach(function (o, q) {
         var xq = 60 + w * (q + 0.5);
-        s.path(zigzag(xq, 36, xq, 170, 5), { 'stroke-width': 1.5 });
+        s.path(zigzag(xq, 36, xq, 170 + off, 5), { 'stroke-width': 1.5 });
         s.text(xq, 216, o.name, { 'font-size': 11 });
         s.text(xq, 230, PEC.fmt(o.v / 1e6, 3) + ' N/µm', { 'font-size': 10, fill: c.muted });
       });
-      s.rect(40, 170, 340, 26, { fill: mass ? c.fill2 : c.fill });
-      if (mass) s.text(210, 183, 'm = ' + PEC.fmt(i.m, 3) + ' kg', { 'font-size': 11 });
+      s.rect(40, 170 + off, 340, 26, { fill: mass ? c.fill2 : c.fill });
+      if (mass) s.text(210, 183 + off, 'm = ' + PEC.fmt(i.m, 3) + ' kg', { 'font-size': 11 });
     }
-    return { svg: s.toString(), notes: [], schematic: true };
+    var f0 = resText(res, 'f₀');
+    return { svg: s.toString(), notes: [], schematic: true, caption: anim === undefined ? '' : (f0 ? 'free vibration at ' + f0 + ' (slowed down, amplitude exaggerated)' : 'enter a mass m to get the eigenfrequency') };
   }
 
-  function impactPreview(i, res, c) {
+  function impactPreview(i, res, c, anim) {
     var s = Sketch(420, 170, c);
-    s.rect(40, 50, 80, 60, { fill: c.fill2 });
-    s.text(80, 80, 'm = ' + PEC.fmt(i.m, 3) + ' kg', { 'font-size': 11 });
-    s.arrow(60, 130, 120, 130); s.text(90, 146, 'v₀ = ' + PEC.fmt(i.v0 * 1e3, 3) + ' mm/s', { fill: c.accent, 'font-size': 11 });
     var rigid = !isFinite(PEC.inf(i.C2));
-    s.path(zigzag(140, 80, rigid ? 360 : 250, 80, 5));
+    // Animated: approach (0–0.4), contact as a half sine (0.4–0.6, compression exaggerated), rebound (0.6–1).
+    var xm = 40, u = 0, dir = 1, cap = '';
+    if (anim !== undefined) {
+      var Fm = resItem(res, 'F'), fr = 0;
+      if (anim < 0.4) { xm = 60 * anim / 0.4; cap = 'approach at v₀'; }
+      else if (anim < 0.6) { fr = Math.sin(PI * (anim - 0.4) / 0.2); xm = 60; u = 45 * fr; cap = 'contact: the spring decelerates the mass'; dir = anim < 0.5 ? 1 : -1; }
+      else { xm = 60 * (1 - (anim - 0.6) / 0.4); dir = -1; cap = 'rebound at −v₀ (no damping)'; }
+      if (Fm) cap += ' · F = ' + PEC.fmt(fr * Fm.value, 3) + ' N';
+    }
+    var C = rigid ? i.C1 : 1 / (1 / i.C1 + 1 / i.C2), u2 = rigid ? 0 : u * C / i.C2;
+    s.rect(xm + u, 50, 80, 60, { fill: c.fill2 });
+    s.text(xm + u + 40, 80, 'm = ' + PEC.fmt(i.m, 3) + ' kg', { 'font-size': 11 });
+    if (anim === undefined || u < 40) {
+      var ax = xm + u + 20;
+      if (dir > 0) s.arrow(ax, 130, ax + 60, 130); else s.arrow(ax + 60, 130, ax, 130);
+      s.text(ax + 30, 146, (anim !== undefined && dir < 0 ? '−' : '') + 'v₀ = ' + PEC.fmt(i.v0 * 1e3, 3) + ' mm/s', { fill: c.accent, 'font-size': 11 });
+    }
+    s.path(zigzag(140 + u, 80, rigid ? 360 : 250 + u2, 80, 5));
     s.text(rigid ? 250 : 195, 58, 'C₁ = ' + PEC.fmt(i.C1 / 1e6, 3) + ' N/µm', { 'font-size': 11 });
     if (!rigid) {
-      s.rect(250, 70, 8, 20, { fill: c.fill2 });
-      s.path(zigzag(258, 80, 360, 80, 4));
+      s.rect(250 + u2, 70, 8, 20, { fill: c.fill2 });
+      s.path(zigzag(258 + u2, 80, 360, 80, 4));
       s.text(309, 58, 'C₂ = ' + PEC.fmt(i.C2 / 1e6, 3) + ' N/µm', { 'font-size': 11 });
     }
     s.ground(360, 30, 20, 100);
-    return { svg: s.toString(), notes: [], schematic: true };
+    return { svg: s.toString(), notes: [], schematic: true, caption: cap };
+  }
+
+  // ---------------------------------------------------------------- motion profile (animated carriage)
+  function motionPreview(i, res, c, anim) {
+    if (!(i.s > 0 && i.v > 0 && i.a > 0 && i.j > 0)) return null;
+    var m = PEC.motionProfile(i.s, i.v, i.a, i.j), T = m.T[7];
+    // The move takes 80 % of the cycle, then the carriage rests at the end.
+    var t = anim === undefined ? T : Math.min(anim / 0.8, 1) * T, st = m.at(t);
+    var s = Sketch(440, 190, c), x0 = 60, x1 = 340, w = 60;
+    var xp = x0 + (x1 - x0) * Math.min(Math.max(st.p / i.s, 0), 1);
+    s.rect(x0 - 10, 110, x1 - x0 + w + 20, 10, { fill: c.fill });
+    s.ground(x0 - 10, 120, x1 - x0 + w + 20, 10);
+    s.line(x0 + w / 2, 70, x0 + w / 2, 132, { stroke: c.muted, 'stroke-dasharray': '3 3', 'stroke-width': 1 });
+    s.line(x1 + w / 2, 70, x1 + w / 2, 132, { stroke: c.muted, 'stroke-dasharray': '3 3', 'stroke-width': 1 });
+    s.rect(xp, 74, w, 36, { fill: c.fill2 });
+    s.circle(xp + w / 2, 92, 3, { fill: c.accent, stroke: 'none' });
+    var vl = 60 * st.v / i.v;
+    if (vl > 3) s.arrow(xp + w / 2, 58, xp + w / 2 + vl, 58);
+    s.text(xp + w / 2, 44, 'v', { fill: c.accent, 'font-style': 'italic' });
+    s.dim(x0 + w / 2, 150, x1 + w / 2, 150, 's = ' + mm(i.s), 14);
+    var cap = anim === undefined ? '' : 't = ' + PEC.fmt(t * 1e3, 3) + ' ms · p = ' + PEC.fmt(st.p * 1e3, 3) + ' mm · v = ' + PEC.fmt(st.v * 1e3, 3) + ' mm/s · a = ' + PEC.fmt(Math.abs(st.a) < 1e-9 * i.a ? 0 : st.a, 3) + ' m/s²';
+    return { svg: s.toString(), notes: anim === undefined ? [] : ['slowed down to about 2.5 s per move'], schematic: true, caption: cap };
   }
 
   function boltPreview(i, res, c) {
@@ -539,8 +644,8 @@
   }
 
   var PREVIEWS = {
-    'leaf-spring': function (i, r, c) { return springPreview(i, r, c, false); },
-    'rod-spring': function (i, r, c) { return springPreview(i, r, c, true); },
+    'leaf-spring': function (i, r, c, a) { return springPreview(i, r, c, false, a); },
+    'rod-spring': function (i, r, c, a) { return springPreview(i, r, c, true, a); },
     'folded-leaf-spring': foldedPreview,
     'flexure-hinge': hingePreview,
     'cross-spring-pivot': pivotPreview,
@@ -552,15 +657,21 @@
     'hertz-contact': hertzPreview,
     'equivalent-stiffness': stiffnessPreview,
     'impact-force': impactPreview,
-    'thermal-bolt-compensation': boltPreview
+    'thermal-bolt-compensation': boltPreview,
+    'motion-profile': motionPreview
   };
+  // Calculators whose sketch can be animated (render with an `anim` phase).
+  var ANIMATED = ['leaf-spring', 'rod-spring', 'folded-leaf-spring', 'flexure-hinge', 'cross-spring-pivot', 'beam-bending',
+    'buckling', 'hertz-contact', 'equivalent-stiffness', 'impact-force', 'motion-profile'];
 
-  // Returns {svg, notes} or null when the calculator has no preview or the inputs can't be drawn.
-  function render(calcId, si, res, colors) {
+  // Returns {svg, notes, caption?} or null when the calculator has no preview or the inputs can't be drawn.
+  // `anim` (optional) is the animation phase in [0, 1); leave it out for the static sketch.
+  function render(calcId, si, res, colors, anim) {
     var fn = PREVIEWS[calcId];
     if (!fn) return null;
+    if (anim !== undefined && ANIMATED.indexOf(calcId) < 0) anim = undefined;
     try {
-      var out = fn(si, res, colors);
+      var out = fn(si, res, colors, anim);
       if (!out) return null;
       out.notes = out.notes.filter(function (v, k, a) { return a.indexOf(v) === k; });
       return out;
@@ -591,5 +702,6 @@
     return m ? { w: +m[1], h: +m[2] } : { w: 400, h: 300 };
   }
 
-  PEC.preview = { render: render, toImage: toImage, size: size, has: function (id) { return !!PREVIEWS[id]; } };
+  PEC.preview = { render: render, toImage: toImage, size: size, has: function (id) { return !!PREVIEWS[id]; },
+    animates: function (id) { return ANIMATED.indexOf(id) >= 0; } };
 })(typeof window !== 'undefined' ? window : globalThis);
