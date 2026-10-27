@@ -33,6 +33,14 @@ spring networks, impact and the bolt stack) show a **live geometry preview**: a 
 redrawn from the inputs, also included in the PDF report. Thin features and deflections are
 exaggerated when needed, and the sketch says when it is not to scale.
 
+Most sketches can also be **animated** (▶ Animate): springs, hinges and beams are loaded and released,
+the column buckles once the load reaches F_b, the Hertz contact flattens, the mass vibrates on its springs,
+the impact mass hits and rebounds, and a carriage follows the motion profile. A live caption shows the
+load and the matching results at each moment.
+
+The **?** icon next to each calculator's title explains the theory: how it works, the key design
+insights and the assumptions behind the formulas (hover on desktop, tap on touch screens).
+
 Each calculator links to its source article and lists the formulas it uses. Stress results are checked
 against a fatigue (dynamic) or yield (static) limit with an optional safety factor, as JPE recommends.
 
@@ -67,7 +75,8 @@ Calculators are plain objects registered with `PEC.register({...})` in `js/calcu
 - `inputs` lists fields with a display unit (for example `mm`, `GPa`, `N/µm`).
 - `compute(i)` receives every value **in SI units** and returns result rows with their display units.
 
-Unit conversion, the form, saving and the PDF are handled for you. Add a check to `tests/run-tests.js`.
+Unit conversion, the form, saving and the PDF are handled for you. Add a theory note to `js/theory.js`,
+optionally a sketch to `js/preview.js`, and a check to `tests/run-tests.js`.
 
 ## Notes on interpretation
 
