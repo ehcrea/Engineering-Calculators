@@ -489,7 +489,25 @@
       history.replaceState(null, '', store.toHash(state.def.id, state.values));
     });
     $('#search').addEventListener('input', function (e) { renderNav(e.target.value); });
-    $('#menuToggle').onclick = function () { document.body.classList.toggle('nav-open'); };
+    // Menu button: on phones it opens the calculator list as an overlay; on wider screens it
+    // collapses the list so the calculator gets the full page width (remembered per browser).
+    var mobile = root.matchMedia('(max-width: 760px)');
+    function syncMenu() {
+      var open = mobile.matches ? document.body.classList.contains('nav-open') : !document.body.classList.contains('nav-collapsed');
+      $('#menuToggle').setAttribute('aria-expanded', String(open));
+    }
+    try { if (localStorage.getItem('pec:v1:navCollapsed') === '1') document.body.classList.add('nav-collapsed'); } catch (e) { /* ignore */ }
+    $('#menuToggle').onclick = function () {
+      if (mobile.matches) document.body.classList.toggle('nav-open');
+      else {
+        var collapsed = document.body.classList.toggle('nav-collapsed');
+        try { localStorage.setItem('pec:v1:navCollapsed', collapsed ? '1' : '0'); } catch (e) { /* ignore */ }
+        drawCharts();
+      }
+      syncMenu();
+    };
+    if (mobile.addEventListener) mobile.addEventListener('change', syncMenu);
+    syncMenu();
     $('#btnLibrary').onclick = openLibrary;
     $('#libClose').onclick = function () { $('#library').close(); };
     $('#libAll').onchange = renderLibrary;
