@@ -28,6 +28,11 @@ or straight from the folder.
 | | Thermal expansion | Common materials: Selection and properties |
 | Reference | Material property table (also used as presets) | Common materials: Selection and properties |
 
+Calculators with a physical shape (springs, hinge, pivot, sections, beams, columns, Hertz contact,
+spring networks, impact and the bolt stack) show a **live geometry preview**: a dimensioned sketch
+redrawn from the inputs, also included in the PDF report. Thin features and deflections are
+exaggerated when needed, and the sketch says when it is not to scale.
+
 Each calculator links to its source article and lists the formulas it uses. Stress results are checked
 against a fatigue (dynamic) or yield (static) limit with an optional safety factor, as JPE recommends.
 
