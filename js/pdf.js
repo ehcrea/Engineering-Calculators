@@ -75,6 +75,17 @@
 
     function ensure(space) { if (y + space > H - M) { doc.addPage(); y = M; } }
 
+    if (report.preview) {
+      var pv = report.preview, pw = Math.min(W - 2 * M, 150), ph = pw * pv.h / pv.w;
+      if (ph > 85) { ph = 85; pw = ph * pv.w / pv.h; }
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.setTextColor(20, 24, 31);
+      doc.text('Geometry', M, y + 3); y += 6;
+      doc.addImage(pv.dataUrl, 'JPEG', M, y, pw, ph);
+      y += ph + 2;
+      doc.setFont('DejaVu', 'normal'); doc.setFontSize(7.5); doc.setTextColor(110, 116, 126);
+      doc.text(pv.note, M, y + 2); y += 7;
+    }
+
     table('Input', report.inputs);
     table('Result', report.results);
 

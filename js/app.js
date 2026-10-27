@@ -151,7 +151,8 @@
       '<input id="f__project" data-id="_project" placeholder="Project / reference" value="' + esc(v._project || '') + '">' +
       '<textarea id="f__notes" data-id="_notes" placeholder="Notes (included in the PDF)">' + esc(v._notes || '') + '</textarea></div>' +
       '</form>' +
-      '<div><div class="card"><h3>Results</h3><div id="warnings"></div><table class="results"><tbody id="results"></tbody></table><div class="charts" id="charts"></div></div>' +
+      '<div><div class="card preview" id="previewCard" hidden><h3>Geometry</h3><div id="preview"></div><p class="preview-notes" id="previewNotes"></p></div>' +
+      '<div class="card"><h3>Results</h3><div id="warnings"></div><table class="results"><tbody id="results"></tbody></table><div class="charts" id="charts"></div></div>' +
       '<div class="card formulas"><h3>Formulas</h3><ul id="formulas"></ul>' +
       '<p class="disclaimer">Formulas from the free <a href="https://www.jpe-innovations.com/precision-point/" target="_blank" rel="noopener">JPE Precision Point</a> resource. This is an independent tool, not affiliated with JPE. Check results before relying on them for critical designs.</p></div></div>' +
       '</div>';
@@ -218,6 +219,7 @@
       $('#warnings').innerHTML = '<div class="warnings">Enter a valid number for: ' + esc(bad.join(', ')) + '</div>';
       $('#results').innerHTML = '';
       $('#charts').innerHTML = '';
+      drawPreview();
       return;
     }
     try {
@@ -236,6 +238,35 @@
         '<td class="val">' + esc(PEC.fmt(r.display)) + '</td><td class="unit">' + esc(r.unit === '-' ? '' : r.unit) + '</td></tr>';
     }).join('');
     drawCharts();
+    drawPreview();
+  }
+
+  var LIGHT_SKETCH = { fg: '#14181f', muted: '#5a626e', accent: '#1f5ea8', accentSoft: '#e6eef8', fill: '#dfe6ef', fill2: '#c3d0e0', bg: '#ffffff' };
+
+  function sketchColors() {
+    var cs = getComputedStyle(document.documentElement);
+    var g = function (n) { return cs.getPropertyValue(n).trim(); };
+    return { fg: g('--fg'), muted: g('--muted'), accent: g('--accent'), accentSoft: g('--accent-soft'), fill: g('--sketch-fill'), fill2: g('--sketch-fill-2'), bg: g('--surface') };
+  }
+
+  function previewFor(colors) {
+    if (!state.lastResult || !PEC.preview.has(state.def.id)) return null;
+    return PEC.preview.render(state.def.id, PEC.inputsToSI(state.def, state.values), state.lastResult, colors);
+  }
+
+  function previewNote(p) {
+    if (p.schematic) return 'Schematic sketch, not to scale' + (p.notes.length ? '; ' + p.notes.join('; ') : '') + '.';
+    return p.notes.length ? 'Not to scale: ' + p.notes.join('; ') + '.' : 'Drawn to scale from the inputs.';
+  }
+
+  function drawPreview() {
+    var card = $('#previewCard');
+    if (!card) return;
+    var p = previewFor(sketchColors());
+    card.hidden = !p;
+    if (!p) return;
+    $('#preview').innerHTML = p.svg;
+    $('#previewNotes').textContent = previewNote(p);
   }
 
   function chartsOf(res) { return res ? (res.charts || (res.chart ? [res.chart] : [])) : []; }
@@ -398,7 +429,13 @@
     });
     var btn = $('#btnPdf');
     btn.disabled = true; btn.textContent = 'Preparing…';
-    PEC.pdf.exportPdf({
+    var sketch = previewFor(LIGHT_SKETCH);
+    var sketchImg = sketch ? PEC.preview.toImage(sketch.svg, PEC.preview.size(sketch.svg).w, PEC.preview.size(sketch.svg).h, 3).then(function (url) {
+      var sz = PEC.preview.size(sketch.svg);
+      return { dataUrl: url, w: sz.w, h: sz.h, note: previewNote(sketch) };
+    }, function () { return null; }) : Promise.resolve(null);
+    sketchImg.then(function (preview) { return PEC.pdf.exportPdf({
+      preview: preview,
       title: def.title,
       subtitle: 'Precision Engineering Calculators · ' + def.category,
       date: new Date().toLocaleString(),
@@ -407,7 +444,7 @@
       inputs: inputs, results: results, warnings: res.warnings, charts: charts,
       formulas: typeof def.formulas === 'function' ? def.formulas(v) : (def.formulas || []),
       source: def.source
-    }, fileBase() + '.pdf').then(function () {
+    }, fileBase() + '.pdf'); }).then(function () {
       toast('PDF downloaded');
     }, function (err) {
       alert('PDF export failed: ' + err.message);
@@ -466,6 +503,7 @@
       document.documentElement.dataset.theme = next;
       try { localStorage.setItem('pec:v1:theme', next); } catch (e) { /* ignore */ }
       drawCharts();
+      drawPreview();
     };
     root.addEventListener('hashchange', function () { routeFromHash(); });
     var resizeT;

@@ -9,7 +9,7 @@ var vm = require('vm');
 
 var ROOT = path.join(__dirname, '..');
 ['js/core.js', 'js/materials.js', 'js/sections.js', 'js/common.js',
-  'js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js'
+  'js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js', 'js/preview.js'
 ].forEach(function (f) { vm.runInThisContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), { filename: f }); });
 
 var PEC = globalThis.PEC;
@@ -99,6 +99,28 @@ close(result('equivalent-stiffness', { mode: 'parallel', c1: 50, c2: 50 }, 'C'),
 // JPE example: Alu clamped part, Ti spacer, SS bolt at 77 K → L_C : L_S = 1 : 0.93
 close(result('thermal-bolt-compensation', {}, 'L_S'), 0.010 * (-2.80 + 3.89) / (-1.62 + 2.80), 1e-9, 'bolt spacer');
 close(result('thermal-bolt-compensation', { Lc: 1 }, 'L_S'), 0.9237e-3, 1e-3, 'JPE ratio 1:0.93');
+
+// Geometry previews render for every option of every calculator that has one.
+var COLORS = { fg: '#000', muted: '#666', accent: '#00f', accentSoft: '#eef', fill: '#ddd', fill2: '#ccc', bg: '#fff' };
+PEC.list.filter(function (d) { return PEC.preview.has(d.id); }).forEach(function (def) {
+  var variants = [PEC.defaults(def)];
+  def.inputs.filter(function (inp) { return inp.type === 'select'; }).forEach(function (sel) {
+    sel.options.forEach(function (o) { var v = PEC.defaults(def); v[sel.id] = o.v; variants.push(v); });
+  });
+  variants.forEach(function (v) {
+    var res = PEC.run(def, v);
+    var p = PEC.preview.render(def.id, PEC.inputsToSI(def, v), res, COLORS);
+    var tag = def.id + ' ' + JSON.stringify(v).slice(0, 60);
+    ok(p && /^<svg[\s\S]*<\/svg>$/.test(p.svg), 'preview renders: ' + tag);
+    ok(p && !/NaN|Infinity|undefined/.test(p.svg), 'preview has no NaN/Infinity: ' + tag);
+  });
+});
+// Edge geometry: flat-sided notch hinge, concave Hertz groove, pivot pole outside the springs.
+[['flexure-hinge', { d2: 0 }], ['hertz-contact', { r1x: 5, r1y: 5, r2x: -5.2, r2y: 30 }], ['cross-spring-pivot', { a: 1.3 }], ['cross-spring-pivot', { a: -0.2 }]].forEach(function (c) {
+  var def = PEC.get(c[0]), v = Object.assign(PEC.defaults(def), c[1]);
+  var p = PEC.preview.render(def.id, PEC.inputsToSI(def, v), PEC.run(def, v), COLORS);
+  ok(p && !/NaN|Infinity|undefined/.test(p.svg), 'edge preview ' + c[0] + ' ' + JSON.stringify(c[1]));
+});
 
 // Formatting
 ok(PEC.fmt(0.0000125) === '1.25·10⁻⁵', 'fmt small: ' + PEC.fmt(0.0000125));
