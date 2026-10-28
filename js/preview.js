@@ -20,6 +20,8 @@
   }
   // Format a length (SI metres) in mm for labels.
   function mm(v) { return PEC.fmt(v * 1e3, 3) + ' mm'; }
+  // Translate sketch text (notes stay in English here and are translated where they are shown).
+  function T(str, vars) { return PEC.t(str, vars); }
 
   // Small SVG builder bound to one colour set and one id namespace.
   function Sketch(W, H, c) {
@@ -88,7 +90,7 @@
     return sym + ' = ' + PEC.fmt(r.unit && r.unit !== '-' ? PEC.fromSI(v, r.unit) : v, 3) + (r.unit && r.unit !== '-' ? ' ' + r.unit : '');
   }
   function caption(f, parts) {
-    return ['load ' + Math.round(f * 100) + ' %'].concat(parts.filter(Boolean)).join(' · ');
+    return [T('load {p} %', { p: Math.round(f * 100) })].concat(parts.filter(Boolean)).join(' · ');
   }
   function rotPt(p, o, deg) {
     var a = deg * PI / 180, cs = Math.cos(a), sn = Math.sin(a), dx = p[0] - o[0], dy = p[1] - o[1];
@@ -171,10 +173,10 @@
     var L = i.L, thick = rod ? i.d : i.t, S = i.shape === 'S';
     var k = 210 / L, xc = 120, yb = 270, yt = yb - L * k;
     var tp = vis(thick, k, 3);
-    if (thick * k < 3) notes.push((rod ? 'diameter' : 'thickness') + ' drawn thicker than scale');
+    if (thick * k < 3) notes.push(rod ? 'diameter drawn thicker than scale' : 'thickness drawn thicker than scale');
     // Exaggerated deflection for visibility
     var uxFull = Math.min(Math.max(i.ux * k, 18), 55), uxPx = uxFull * lf;
-    if (Math.abs(uxFull - i.ux * k) > 0.5) notes.push('deflection ' + (i.ux * k < uxFull ? 'exaggerated' : 'reduced') + ' for clarity');
+    if (Math.abs(uxFull - i.ux * k) > 0.5) notes.push(i.ux * k < uxFull ? 'deflection exaggerated for clarity' : 'deflection reduced for clarity');
     var shapeFn = S ? function (z) { return 3 * z * z - 2 * z * z * z; } : function (z) { return (3 * z * z - z * z * z) / 2; };
 
     s.ground(xc - 60, yb, 120, 22);
@@ -192,11 +194,11 @@
     // Dimensions
     s.dim(xc - tp / 2, yb, xc - tp / 2, yt, 'L = ' + mm(L), -42);
     s.dim(xc, S ? yt - 30 : yt - 8, xc + uxFull, S ? yt - 30 : yt - 8, 'uₓ = ' + mm(i.ux), -14);
-    s.text(xc, yb + 34, S ? 'S-shape (end guided)' : 'C-shape (end free)', { fill: c.muted, 'font-size': 11 });
+    s.text(xc, yb + 34, T(S ? 'S-shape (end guided)' : 'C-shape (end free)'), { fill: c.muted, 'font-size': 11 });
 
     // Cross-section (view from above)
     var sx = 330, sy = 120;
-    s.text(sx, 30, 'Cross-section', { 'font-weight': 600 });
+    s.text(sx, 30, T('Cross-section'), { 'font-weight': 600 });
     if (rod) {
       s.circle(sx, sy, 34);
       s.dim(sx - 34, sy + 34, sx + 34, sy + 34, 'd = ' + mm(i.d), 18);
@@ -245,7 +247,7 @@
     }
     s.dim(x0, y0, x0, yt, 'L₁ = ' + mm(i.L1), 30);
     s.dim(x0, yt, xe, yt, 'L₂ = ' + mm(i.L2), -34);
-    s.text(xe - (xe - x0) / 2, y0 + 34, 'width b = ' + mm(i.b) + ', thickness t = ' + mm(i.t), { fill: c.muted, 'font-size': 11 });
+    s.text(xe - (xe - x0) / 2, y0 + 34, T('width b = {b}, thickness t = {t}', { b: mm(i.b), t: mm(i.t) }), { fill: c.muted, 'font-size': 11 });
     s.arrow(330, 290, 370, 290, { stroke: c.muted, 'stroke-width': 1 }); s.text(380, 290, 'x', { fill: c.muted, 'font-style': 'italic' });
     s.arrow(330, 290, 330, 250, { stroke: c.muted, 'stroke-width': 1 }); s.text(330, 240, 'y', { fill: c.muted, 'font-style': 'italic' });
     if (anim !== undefined) notes.push('deflection exaggerated for clarity');
@@ -309,17 +311,17 @@
     var dx = 340, dy = 150, span = 2 * r1 + i.h + (isFinite(r2) ? 2 * r2 : r1);
     var kd = 170 / span, hd = vis(i.h, kd, 2.5), rd1 = r1 * kd, rd2 = isFinite(r2) ? r2 * kd : Infinity;
     if (i.h * kd < 2.5) notes.push('detail: hinge thickness drawn thicker than scale');
-    s.text(dx, 24, 'Notch detail', { 'font-weight': 600 });
+    s.text(dx, 24, T('Notch detail'), { 'font-weight': 600 });
     var hf = Math.max(rd1, isFinite(rd2) ? rd2 : 0) + 20;
     var ed = rot ? bentNotch(s, dx, dy, hd, rd1, rd2, hf, c, rot) : hingeNotch(s, dx, dy, hd, rd1, rd2, hf, c);
     s.line(dx - hd / 2, dy, dx + hd / 2, dy, { stroke: c.accent, 'stroke-width': 1.5 });
-    if (rot) s.text(dx, dy + hf + 46, 'rotation happens in the thin neck', { fill: c.accent, 'font-size': 11 });
+    if (rot) s.text(dx, dy + hf + 46, T('rotation happens in the thin neck'), { fill: c.accent, 'font-size': 11 });
     s.line(dx, dy + 2, dx, dy + hf + 6, { stroke: c.muted, 'stroke-width': 0.8, 'stroke-dasharray': '3 2' });
     s.text(dx, dy + hf + 14, 'h = ' + mm(i.h), { fill: c.muted, 'font-size': 11 });
     if (r1 > 0) s.dim(ed.xl, dy - rd1, ed.xl, dy + rd1, 'd₁ = ' + mm(2 * r1), 14);
     if (isFinite(r2) && r2 > 0) s.dim(ed.xr, dy - rd2, ed.xr, dy + rd2, 'd₂ = ' + mm(2 * r2), -14);
-    else s.text(ed.xr + 16, dy, 'flat', { fill: c.muted, 'font-size': 11, transform: 'rotate(90 ' + n(ed.xr + 16) + ' ' + n(dy) + ')' });
-    s.text(dx, dy + hf + 30, 'width t = ' + mm(i.t) + ' (into page)', { fill: c.muted, 'font-size': 11 });
+    else s.text(ed.xr + 16, dy, T('flat'), { fill: c.muted, 'font-size': 11, transform: 'rotate(90 ' + n(ed.xr + 16) + ' ' + n(dy) + ')' });
+    s.text(dx, dy + hf + 30, T('width t = {t} (into page)', { t: mm(i.t) }), { fill: c.muted, 'font-size': 11 });
     if (rot) notes.push('rotation exaggerated for clarity');
     return { svg: s.toString(), notes: notes, caption: caption(lf, [resText(res, 'F_z', lf), 'R_y = ' + PEC.fmt(lf * i.Ry * 1e3, 3) + ' mrad', resText(res, 'σ_max', lf)]) };
   }
@@ -361,9 +363,9 @@
       s.line(end2[0], end2[1], pole[0], pole[1], { stroke: c.muted, 'stroke-dasharray': '4 3' });
     }
     s.circle(pole[0], pole[1], 4, { fill: c.accent, stroke: 'none' });
-    s.text(pole[0] + 40, pole[1], 'pole, a = ' + PEC.fmt(a, 3), { fill: c.accent, 'font-size': 11 });
+    s.text(pole[0] + 40, pole[1], T('pole, a = {a}', { a: PEC.fmt(a, 3) }), { fill: c.accent, 'font-size': 11 });
     s.dim(p1[0], p1[1], e1[0], e1[1], 'L = ' + mm(i.L), -28);
-    s.text(cx, yb + 36, 'w = ' + mm(i.w) + ', t = ' + mm(i.t) + ' per leaf spring', { fill: c.muted, 'font-size': 11 });
+    s.text(cx, yb + 36, T('w = {w}, t = {t} per leaf spring', { w: mm(i.w), t: mm(i.t) }), { fill: c.muted, 'font-size': 11 });
     if (pole[1] < 20 || pole[1] > 300) notes.push('pole lies outside the drawing');
     if (rot) notes.push('rotation exaggerated for clarity');
     return { svg: s.toString(), notes: notes, caption: caption(lf, ['θ = ' + PEC.fmt(lf * i.theta * 1e3, 3) + ' mrad', resText(res, 'M', lf), resText(res, 'σ', lf)]) };
@@ -419,13 +421,13 @@
       var vals = ch.series[0].values, mx = Math.max.apply(null, vals.map(Math.abs)) || 1;
       var pts = vals.map(function (v, k) { return [x0 + Lp * k / (vals.length - 1), y + v / mx * 40 * lf]; });
       s.path(polyline(pts), { stroke: c.accent, 'stroke-dasharray': '5 4' });
-      s.text((x0 + x1) / 2, y + 58, 'deflected shape (exaggerated)', { fill: c.accent, 'font-size': 11 });
+      s.text((x0 + x1) / 2, y + 58, T('deflected shape (exaggerated)'), { fill: c.accent, 'font-size': 11 });
     }
     s.dim(x0, y + 60, x1, y + 60, 'L = ' + mm(i.L), 26);
     // Section inset
-    s.text(400, 190, 'Section', { 'font-weight': 600, 'font-size': 11 });
+    s.text(400, 190, T('Section'), { 'font-weight': 600, 'font-size': 11 });
     notes = notes.concat(drawSection(s, i, 400, 245, 50, { dims: false }));
-    s.text(400, 290, i.axis === 'y' ? 'bending about y' : 'bending about x', { fill: c.muted, 'font-size': 10 });
+    s.text(400, 290, T(i.axis === 'y' ? 'bending about y' : 'bending about x'), { fill: c.muted, 'font-size': 10 });
     return { svg: s.toString(), notes: notes, schematic: true, caption: caption(lf, [resText(res, 'δy_max', lf), resText(res, 'σ_max', lf)]) };
   }
 
@@ -457,10 +459,10 @@
     // Animation: load F ramps up to F_b with the column straight, it buckles at F_b, then the load is removed.
     var fr = 1, bow = 1, cap = '', fb = resItem(res, 'F_b');
     if (anim !== undefined) {
-      if (anim < 0.4) { fr = smooth(anim / 0.4); bow = 0; cap = 'F < F_b: the column stays straight'; }
-      else if (anim < 0.7) { fr = 1; bow = smooth((anim - 0.4) / 0.15); cap = 'F = F_b: the column buckles sideways in this mode'; }
-      else { fr = 1 - smooth((anim - 0.7) / 0.25); bow = fr; cap = 'load removed: the column springs back (elastic)'; }
-      if (fb) cap = 'F = ' + PEC.fmt(fr * fb.value, 3) + ' N (' + Math.round(fr * 100) + ' % of F_b) · ' + cap;
+      if (anim < 0.4) { fr = smooth(anim / 0.4); bow = 0; cap = T('F < F_b: the column stays straight'); }
+      else if (anim < 0.7) { fr = 1; bow = smooth((anim - 0.4) / 0.15); cap = T('F = F_b: the column buckles sideways in this mode'); }
+      else { fr = 1 - smooth((anim - 0.7) / 0.25); bow = fr; cap = T('load removed: the column springs back (elastic)'); }
+      if (fb) cap = T('F = {F} N ({p} % of F_b)', { F: PEC.fmt(fr * fb.value, 3), p: Math.round(fr * 100) }) + ' · ' + cap;
     }
     var amp = 30 * bow, f = modeShape(k), tip = amp * f(1), q, z, pts = [];
 
@@ -482,7 +484,7 @@
       if (kind === 'clamp') { s.rect(x - 18, y - 16, 36, 16, { fill: c.fill2 }); wall(); return 16; }
       if (kind === 'guide') {
         s.rect(x - 18, y - 16, 36, 16, { fill: c.fill2 });
-        s.text(x - 24, y - 8, 'guided', { fill: c.muted, 'font-size': 10, 'text-anchor': 'end', x: x - 24 });
+        s.text(x - 24, y - 8, T('guided'), { fill: c.muted, 'font-size': 10, 'text-anchor': 'end', x: x - 24 });
         return 16;
       }
       return 0;
@@ -502,7 +504,7 @@
     if (seg[1] < 1) s.line(cx, y1, bx + 4, y1, { stroke: c.muted, 'stroke-width': 0.6, 'stroke-dasharray': '2 2' });
     if (k === '2' || k === '2p') s.text(bx + 36, (y0 + y1) / 2 + 16, 'L_b = 2·L', { fill: c.muted, 'font-size': 11 });
 
-    s.text(320, 60, 'Section', { 'font-weight': 600, 'font-size': 11 });
+    s.text(320, 60, T('Section'), { 'font-weight': 600, 'font-size': 11 });
     notes = notes.concat(drawSection(s, i, 320, 140, 90));
     if (anim !== undefined) notes.push('sideways deflection exaggerated');
     return { svg: s.toString(), notes: notes, schematic: true, caption: cap };
@@ -545,19 +547,19 @@
     var dz = anim === undefined ? 0 : 6 * Math.pow(lf, 2 / 3), fl = anim === undefined ? 0 : 10 * Math.cbrt(lf);
     var rs = [i.r1x, i.r1y, i.r2x, i.r2y].map(PEC.inf).filter(isFinite).map(Math.abs);
     var kpx = rs.length ? 40 / Math.min.apply(null, rs) : 1;
-    function lab(r) { r = PEC.inf(r); return isFinite(r) ? PEC.fmt(r * 1e3, 3) + ' mm' : 'flat'; }
+    function lab(r) { r = PEC.inf(r); return isFinite(r) ? PEC.fmt(r * 1e3, 3) + ' mm' : T('flat'); }
     hertzView(s, 110, 140, PEC.inf(i.r1x), PEC.inf(i.r2x), 'x–z: r₁ₓ = ' + lab(i.r1x) + ', r₂ₓ = ' + lab(i.r2x), kpx, dz, fl);
     hertzView(s, 300, 140, PEC.inf(i.r1y), PEC.inf(i.r2y), 'y–z: r₁ᵧ = ' + lab(i.r1y) + ', r₂ᵧ = ' + lab(i.r2y), kpx, dz, fl);
     if (lf > 0.05) s.arrow(205, 80 - 40 * lf, 205, 80);
     s.text(218, 40, 'F', { fill: c.accent, 'font-style': 'italic' });
-    s.text(110, 18, 'body 1 (top), body 2 (bottom)', { fill: c.muted, 'font-size': 11, 'text-anchor': 'start', x: 20 });
+    s.text(110, 18, T('body 1 (top), body 2 (bottom)'), { fill: c.muted, 'font-size': 11, 'text-anchor': 'start', x: 20 });
     if (Math.abs(i.theta) > 1e-9) notes.push('views drawn without the misalignment angle θ');
     notes.push('contact ellipse enlarged');
     // Contact ellipse
     var A = res.results.filter(function (r) { return r.sym === 'a'; })[0], B = res.results.filter(function (r) { return r.sym === 'b'; })[0];
     if (A && B && A.value > 0) {
       var ex = 410, ey = 140, ka = 30 / A.value, ce = Math.cbrt(lf);
-      s.text(ex, 60, 'Contact', { 'font-weight': 600, 'font-size': 11 });
+      s.text(ex, 60, T('Contact'), { 'font-weight': 600, 'font-size': 11 });
       s.add('<ellipse' + attrs({ cx: ex, cy: ey, rx: n(30 * ce), ry: n(Math.max(B.value * ka * ce, 1.5)), fill: c.accentSoft, stroke: c.accent, 'stroke-width': 1.5 }) + '/>');
       s.text(ex, ey + 50, '2a = ' + PEC.fmt(2 * A.value * 1e6, 3) + ' µm', { fill: c.muted, 'font-size': 10 });
       s.text(ex, ey + 64, '2b = ' + PEC.fmt(2 * B.value * 1e6, 3) + ' µm', { fill: c.muted, 'font-size': 10 });
@@ -615,7 +617,7 @@
       if (mass) s.text(210, 183 + off, 'm = ' + PEC.fmt(i.m, 3) + ' kg', { 'font-size': 11 });
     }
     var f0 = resText(res, 'f₀');
-    return { svg: s.toString(), notes: [], schematic: true, caption: anim === undefined ? '' : (f0 ? 'free vibration at ' + f0 + ' (slowed down, amplitude exaggerated)' : 'enter a mass m to get the eigenfrequency') };
+    return { svg: s.toString(), notes: [], schematic: true, caption: anim === undefined ? '' : (f0 ? T('free vibration at {f} (slowed down, amplitude exaggerated)', { f: f0 }) : T('enter a mass m to get the eigenfrequency')) };
   }
 
   function impactPreview(i, res, c, anim) {
@@ -625,9 +627,9 @@
     var xm = 40, u = 0, dir = 1, cap = '';
     if (anim !== undefined) {
       var Fm = resItem(res, 'F'), fr = 0;
-      if (anim < 0.4) { xm = 60 * anim / 0.4; cap = 'approach at v₀'; }
-      else if (anim < 0.6) { fr = Math.sin(PI * (anim - 0.4) / 0.2); xm = 60; u = 45 * fr; cap = 'contact: the spring decelerates the mass'; dir = anim < 0.5 ? 1 : -1; }
-      else { xm = 60 * (1 - (anim - 0.6) / 0.4); dir = -1; cap = 'rebound at −v₀ (no damping)'; }
+      if (anim < 0.4) { xm = 60 * anim / 0.4; cap = T('approach at v₀'); }
+      else if (anim < 0.6) { fr = Math.sin(PI * (anim - 0.4) / 0.2); xm = 60; u = 45 * fr; cap = T('contact: the spring decelerates the mass'); dir = anim < 0.5 ? 1 : -1; }
+      else { xm = 60 * (1 - (anim - 0.6) / 0.4); dir = -1; cap = T('rebound at −v₀ (no damping)'); }
       if (Fm) cap += ' · F = ' + PEC.fmt(fr * Fm.value, 3) + ' N';
     }
     var C = rigid ? i.C1 : 1 / (1 / i.C1 + 1 / i.C2), u2 = rigid ? 0 : u * C / i.C2;
@@ -677,13 +679,13 @@
     var s = Sketch(380, 330, c), notes = ['widths schematic, lengths to scale'];
     var k = 200 / (i.Lc + Ls), x = 150, top = 50, hS = Ls * k, hC = i.Lc * k;
     s.rect(x - 60, top + hS + hC, 120, 40, { fill: 'url(#' + s.id + 'h)' });
-    s.text(x, top + hS + hC + 54, 'base (thread)', { fill: c.muted, 'font-size': 11 });
+    s.text(x, top + hS + hC + 54, T('base (thread)'), { fill: c.muted, 'font-size': 11 });
     s.rect(x - 45, top, 90, hS, { fill: c.accentSoft });
     s.rect(x - 60, top + hS, 120, hC, { fill: c.fill });
     s.rect(x - 7, top - 4, 14, hS + hC + 30, { fill: c.fill2 });
     s.rect(x - 22, top - 18, 44, 14, { fill: c.fill2 });
-    s.text(x + 110, top + hS / 2, 'spacer', { fill: c.muted, 'font-size': 11 });
-    s.text(x + 110, top + hS + hC / 2, 'clamped part', { fill: c.muted, 'font-size': 11 });
+    s.text(x + 110, top + hS / 2, T('spacer'), { fill: c.muted, 'font-size': 11 });
+    s.text(x + 110, top + hS + hC / 2, T('clamped part'), { fill: c.muted, 'font-size': 11 });
     s.dim(x - 45, top, x - 45, top + hS, 'L_S = ' + mm(Ls), 26);
     s.dim(x - 60, top + hS, x - 60, top + hS + hC, 'L_C = ' + mm(i.Lc), 14);
     return { svg: s.toString(), notes: notes };

@@ -8,7 +8,7 @@ var path = require('path');
 var vm = require('vm');
 
 var ROOT = path.join(__dirname, '..');
-['js/core.js', 'js/materials.js', 'js/sections.js', 'js/common.js',
+['js/core.js', 'js/i18n.js', 'js/i18n/de.js', 'js/i18n/nl.js', 'js/i18n/tr.js', 'js/materials.js', 'js/sections.js', 'js/common.js',
   'js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js', 'js/theory.js', 'js/preview.js'
 ].forEach(function (f) { vm.runInThisContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), { filename: f }); });
 
@@ -141,6 +141,45 @@ PEC.list.forEach(function (d) {
   var t = PEC.THEORY[d.id];
   ok(t && t.intro && t.points && t.points.length && t.assumptions, 'theory note: ' + d.id);
 });
+
+// Translations: every text the app can show exists in each language, with the same placeholders.
+var I18N_KEYS = require('./i18n-keys.js')(PEC, ROOT);
+ok(I18N_KEYS.length > 500, 'collected ' + I18N_KEYS.length + ' translatable texts');
+PEC.i18n.LANGS.filter(function (l) { return l.code !== 'en'; }).forEach(function (l) {
+  var dict = PEC.i18n.dict(l.code);
+  var missing = I18N_KEYS.filter(function (k) { return dict[k] === undefined; });
+  ok(!missing.length, l.code + ' has every text; missing: ' + missing.slice(0, 5).join(' | '));
+  var ph = function (s) { return (s.match(/\{\w+\}/g) || []).sort().join(); };
+  var bad = Object.keys(dict).filter(function (k) { return ph(k) !== ph(dict[k]); });
+  ok(!bad.length, l.code + ' keeps placeholders: ' + bad.join(' | '));
+  var unused = Object.keys(dict).filter(function (k) { return I18N_KEYS.indexOf(k) < 0; });
+  ok(!unused.length, l.code + ' has no stale texts: ' + unused.slice(0, 5).join(' | '));
+
+  // Render everything in this language and record any text that is shown untranslated.
+  PEC.i18n.setLang(l.code, false);
+  PEC.i18n.track(true);
+  PEC.list.forEach(function (def) {
+    var variants = [PEC.defaults(def)];
+    def.inputs.filter(function (inp) { return inp.type === 'select'; }).forEach(function (sel) {
+      sel.options.forEach(function (o) { var v = PEC.defaults(def); v[sel.id] = o.v; variants.push(v); });
+    });
+    variants.forEach(function (v) {
+      var res = PEC.run(def, v);
+      res.results.forEach(function (r) { PEC.t(r.label); if (typeof r.value === 'string') PEC.t(r.value); });
+      res.warnings.forEach(function (w) { PEC.t(w); });
+      [undefined, 0, 0.25, 0.5, 0.8].forEach(function (ph) {
+        var p = PEC.preview.render(def.id, PEC.inputsToSI(def, v), res, COLORS, ph);
+        if (p) p.notes.forEach(function (n) { PEC.t(n); });
+      });
+    });
+  });
+  var shown = PEC.i18n.missing();
+  ok(!shown.length, l.code + ' shows no untranslated text: ' + shown.slice(0, 5).join(' | '));
+  ok(PEC.preview.render('leaf-spring', PEC.inputsToSI(PEC.get('leaf-spring'), PEC.defaults(PEC.get('leaf-spring'))), PEC.run(PEC.get('leaf-spring'), PEC.defaults(PEC.get('leaf-spring'))), COLORS).svg.indexOf(PEC.t('Cross-section')) > 0, l.code + ' sketch labels are translated');
+  PEC.i18n.track(false);
+});
+PEC.i18n.setLang('en', false);
+ok(PEC.t('Saved "{name}"', { name: 'X' }) === 'Saved "X"', 'English fallback fills placeholders');
 
 // Formatting
 ok(PEC.fmt(0.0000125) === '1.25·10⁻⁵', 'fmt small: ' + PEC.fmt(0.0000125));

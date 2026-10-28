@@ -9,22 +9,24 @@
   <link rel="stylesheet" href="css/style.css">
   <script>
     try { var t = localStorage.getItem('pec:v1:theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+    try { var l = localStorage.getItem('pec:v1:lang'); if (l) document.documentElement.lang = l; } catch (e) {}
   </script>
 </head>
 <body>
   <header class="topbar">
-    <button class="btn menu-toggle" id="menuToggle" aria-label="Show or hide the calculator list" title="Show or hide the calculator list" aria-controls="sidebar" aria-expanded="true">☰</button>
-    <h1>Precision Engineering Calculators <small>formulas from JPE Precision Point</small></h1>
+    <button class="btn menu-toggle" id="menuToggle" aria-label="Show or hide the calculator list" title="Show or hide the calculator list" data-i18n-title="Show or hide the calculator list" data-i18n-aria-label="Show or hide the calculator list" aria-controls="sidebar" aria-expanded="true">☰</button>
+    <h1><span data-i18n="Precision Engineering Calculators">Precision Engineering Calculators</span> <small data-i18n="formulas from JPE Precision Point">formulas from JPE Precision Point</small></h1>
     <div class="spacer"></div>
     <div class="toolbar">
-      <button class="btn" id="btnLibrary" title="Saved calculations, JSON import/export">Saved</button>
-      <button class="btn" id="btnTheme" title="Toggle light/dark theme" aria-label="Toggle theme"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <select class="btn lang-select" id="langSelect" aria-label="Language" title="Language" data-i18n-title="Language" data-i18n-aria-label="Language"></select>
+      <button class="btn" id="btnLibrary" title="Saved calculations, JSON import/export" data-i18n="Saved" data-i18n-title="Saved calculations, JSON import/export">Saved</button>
+      <button class="btn" id="btnTheme" title="Toggle light/dark theme" aria-label="Toggle theme" data-i18n-title="Toggle light/dark theme" data-i18n-aria-label="Toggle theme"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
     </div>
   </header>
 
   <div class="layout">
     <nav class="sidebar" id="sidebar">
-      <input type="search" id="search" placeholder="Search calculators…" aria-label="Search calculators">
+      <input type="search" id="search" placeholder="Search calculators…" aria-label="Search calculators" data-i18n-placeholder="Search calculators…" data-i18n-aria-label="Search calculators">
       <div id="nav"></div>
     </nav>
     <main id="main"></main>
@@ -32,14 +34,14 @@
 
   <dialog id="library">
     <div class="dialog-head">
-      <h3>Saved calculations</h3>
-      <label style="font-size:13px"><input type="checkbox" id="libAll"> all calculators</label>
-      <button class="btn small" id="libClose">Close</button>
+      <h3 data-i18n="Saved calculations">Saved calculations</h3>
+      <label style="font-size:13px"><input type="checkbox" id="libAll"> <span data-i18n="all calculators">all calculators</span></label>
+      <button class="btn small" id="libClose" data-i18n="Close">Close</button>
     </div>
     <div class="dialog-body">
       <div class="toolbar" style="margin-bottom:10px">
-        <button class="btn small" id="libExport">Export JSON</button>
-        <button class="btn small" id="libImport">Import JSON</button>
+        <button class="btn small" id="libExport" data-i18n="Export JSON">Export JSON</button>
+        <button class="btn small" id="libImport" data-i18n="Import JSON">Import JSON</button>
         <input type="file" id="libFile" accept="application/json,.json" hidden>
       </div>
       <div id="libList"></div>
@@ -49,6 +51,10 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="js/core.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/i18n/de.js"></script>
+  <script src="js/i18n/nl.js"></script>
+  <script src="js/i18n/tr.js"></script>
   <script src="js/materials.js"></script>
   <script src="js/sections.js"></script>
   <script src="js/common.js"></script>
