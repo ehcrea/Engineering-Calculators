@@ -5,6 +5,7 @@
   'use strict';
   var PEC = root.PEC, store = PEC.store, t = PEC.t;
   var $ = function (sel, el) { return (el || document).querySelector(sel); };
+  var U = PEC.units;
 
   // Units of the properties in PEC.MATERIALS.
   var MAT_UNITS = { E: 'GPa', nu: '-', sy: 'MPa', sf: 'MPa', su: 'MPa', rho: 'kg/m³', alpha: 'µm/m·K' };
@@ -60,6 +61,7 @@
     if (inp.type === 'heading') return '<div class="form-section">' + esc(t(inp.label)) + '</div>';
     var v = values[inp.id];
     var id = 'f_' + inp.id;
+    if (inp.type !== 'select' && inp.type !== 'material') v = shownValue(inp, v);
     if (inp.type === 'select' || inp.type === 'material') {
       var opts = inp.type === 'material'
         ? [{ v: '', label: 'Custom values' }].concat(PEC.MATERIALS.map(function (m) { return { v: m.name, label: m.name }; }))
@@ -72,8 +74,29 @@
     return '<div class="field" data-field="' + inp.id + '"' + hidden + '>' +
       '<label for="' + id + '">' + esc(t(inp.label)) + (inp.sym ? '<span class="sym">' + symHtml(inp.sym) + '</span>' : '') + '</label>' +
       '<input id="' + id + '" data-id="' + inp.id + '" type="text" inputmode="decimal" autocomplete="off" value="' + esc(v === undefined || v === null ? '' : v) + '"' + (inp.optional ? ' placeholder="—"' : '') + '>' +
-      '<span class="unit">' + esc(inp.unit === '-' ? '' : inp.unit || '') + '</span>' +
+      '<span class="unit">' + esc(unitText(inp.unit)) + '</span>' +
       (inp.hint ? '<span class="hint">' + esc(t(inp.hint)) + '</span>' : '') + '</div>';
+  }
+
+  function unitText(unit) { return unit === '-' ? '' : U.du(unit || ''); }
+
+  var NUMBER = /^\s*[-+]?(\d+[.,]?\d*|[.,]\d+)([eE][-+]?\d+)?\s*$/;
+  function parseNum(raw) {
+    return NUMBER.test(String(raw)) ? parseFloat(String(raw).replace(',', '.')) : NaN;
+  }
+
+  // Values are stored in the calculator's (metric) units, so saved calculations and links work in
+  // either system. In the US system a numeric field shows, and accepts, its US customary value.
+  function shownValue(inp, v) {
+    if (!inp.unit || U.du(inp.unit) === inp.unit) return v;
+    var n = parseNum(v);
+    return isFinite(n) ? Number(U.toDisplay(n, inp.unit).toPrecision(6)) : v;
+  }
+
+  function storedValue(inp, raw) {
+    if (!inp || !inp.unit || U.du(inp.unit) === inp.unit) return raw;
+    var n = parseNum(raw);
+    return isFinite(n) ? Number(U.fromDisplay(n, inp.unit).toPrecision(12)) : raw;
   }
 
   function applyVisibility() {
@@ -95,7 +118,7 @@
       v = Number(v.toPrecision(6));
       state.values[target] = v;
       var el = $('#f_' + target);
-      if (el) el.value = v;
+      if (el) el.value = shownValue(field, v);
     });
   }
 
@@ -189,8 +212,8 @@
   function onInput(e) {
     var id = e.target.dataset.id;
     if (!id) return;
-    state.values[id] = e.target.value;
     var inp = state.def.inputs.filter(function (x) { return x.id === id; })[0];
+    state.values[id] = storedValue(inp, e.target.value);
     if (inp && inp.type === 'material') applyMaterial(inp, e.target.value);
     else if (e.type === 'input') detachMaterial(id);
     if (inp && inp.type === 'select') applyVisibility();
@@ -205,8 +228,7 @@
       if (!inp.id || inp.type === 'heading' || inp.type === 'select' || inp.type === 'material') return;
       var raw = state.values[inp.id];
       var empty = raw === '' || raw === null || raw === undefined;
-      var num = parseFloat(String(raw).replace(',', '.'));
-      var invalid = visible(inp, state.values) && ((empty && !inp.optional) || (!empty && (!isFinite(num) || !/^\s*[-+]?(\d+[.,]?\d*|[.,]\d+)([eE][-+]?\d+)?\s*$/.test(String(raw)))));
+      var invalid = visible(inp, state.values) && ((empty && !inp.optional) || (!empty && !isFinite(parseNum(raw))));
       var el = $('#f_' + inp.id);
       if (el) el.classList.toggle('invalid', invalid);
       if (invalid) bad.push(t(inp.label));
@@ -240,7 +262,7 @@
     $('#results').innerHTML = res.results.map(function (r) {
       if (r.type === 'heading') return '<tr class="section"><td colspan="4">' + esc(t(r.label)) + '</td></tr>';
       return '<tr class="' + (r.highlight || '') + '"><td>' + esc(t(r.label)) + '</td><td class="sym">' + symHtml(r.sym) + '</td>' +
-        '<td class="val">' + esc(valueText(r.display)) + '</td><td class="unit">' + esc(r.unit === '-' ? '' : r.unit) + '</td></tr>';
+        '<td class="val">' + esc(valueText(r.display)) + '</td><td class="unit">' + esc(unitText(r.unit)) + '</td></tr>';
     }).join('');
     drawCharts();
     drawPreview();
@@ -491,7 +513,7 @@
       return o ? t(o.label) : String(v);
     }
     if (inp.type === 'material') return v ? t(v) : t('Custom values');
-    return v === '' || v === null || v === undefined ? '—' : String(v);
+    return v === '' || v === null || v === undefined ? '—' : String(shownValue(inp, v));
   }
 
   function exportPdf() {
@@ -501,13 +523,13 @@
     def.inputs.forEach(function (inp) {
       if (inp.type === 'heading') { inputs.push({ heading: t(inp.label) }); return; }
       if (!visible(inp, v)) return;
-      inputs.push({ label: t(inp.label), sym: inp.sym || '', value: displayValue(inp, v[inp.id]), unit: inp.unit === '-' ? '' : (inp.unit || '') });
+      inputs.push({ label: t(inp.label), sym: inp.sym || '', value: displayValue(inp, v[inp.id]), unit: unitText(inp.unit) });
     });
     // Drop headings with no rows after them.
     inputs = inputs.filter(function (row, k) { return !row.heading || (inputs[k + 1] && !inputs[k + 1].heading); });
     var results = res.results.map(function (r) {
       if (r.type === 'heading') return { heading: t(r.label) };
-      return { label: t(r.label), sym: r.sym, value: valueText(r.display), unit: r.unit === '-' ? '' : r.unit };
+      return { label: t(r.label), sym: r.sym, value: valueText(r.display), unit: unitText(r.unit) };
     });
     var colors = { fg: '#14181f', muted: '#5a626e', grid: '#e6e9ee', line: '#1f5ea8', bg: '#ffffff' };
     var charts = chartsOf(res).map(function (spec) {
@@ -547,13 +569,15 @@
     document.body.classList.remove('nav-open');
     renderNav($('#search').value);
     history.replaceState(null, '', '#/' + MATERIALS_VIEW);
+    var cell = function (v, unit) { return v === null ? '–' : U.du(unit) === unit ? v : PEC.fmt(U.toDisplay(v, unit), 3); };
+    var head = function (sym, unit) { return '<th>' + sym + ' [' + esc(U.du(unit)) + ']</th>'; };
     var rows = PEC.MATERIALS.map(function (m) {
-      return '<tr><td>' + esc(t(m.name)) + '</td><td>' + m.E + '</td><td>' + m.rho + '</td><td>' + m.sy + '</td><td>' + m.su + '</td><td>' + m.sf + ' <small>(' + esc(t(m.sfNote)) + ')</small></td><td>' + m.alpha + '</td><td>' + (m.c === null ? '–' : m.c) + '</td><td>' + m.lambda + '</td><td>' + m.nu + '</td></tr>';
+      return '<tr><td>' + esc(t(m.name)) + '</td><td>' + cell(m.E, 'GPa') + '</td><td>' + cell(m.rho, 'kg/m³') + '</td><td>' + cell(m.sy, 'MPa') + '</td><td>' + cell(m.su, 'MPa') + '</td><td>' + cell(m.sf, 'MPa') + ' <small>(' + esc(t(m.sfNote)) + ')</small></td><td>' + cell(m.alpha, 'µm/m·K') + '</td><td>' + cell(m.c, 'J/kg·K') + '</td><td>' + cell(m.lambda, 'W/m·K') + '</td><td>' + m.nu + '</td></tr>';
     }).join('');
     $('#main').innerHTML = '<div class="calc-head"><h2>' + esc(t('Material properties')) + '</h2>' +
       '<p>' + esc(t('Used as presets in the calculators. Where JPE gives a range, the lower bound is used for strength and the midpoint for stiffness and thermal values. Poisson\'s ratio is not part of the JPE table; typical handbook values are shown.')) + '</p>' +
       '<div class="meta">' + esc(t('Source:')) + ' <a href="https://www.jpe-innovations.com/precision-point/common-materials-selection-properties/" target="_blank" rel="noopener">JPE Precision Point – Common materials: Selection and properties</a></div></div>' +
-      '<div class="card table-wrap" style="margin-top:16px"><table class="materials"><thead><tr><th>' + esc(t('Material')) + '</th><th>E [GPa]</th><th>ρ [kg/m³]</th><th>σ₀.₂ [MPa]</th><th>σ_max [MPa]</th><th>σ_fatigue [MPa]</th><th>α [µm/m·K]</th><th>c [J/kg·K]</th><th>λ [W/m·K]</th><th>ν (' + esc(t('typ.')) + ')</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      '<div class="card table-wrap" style="margin-top:16px"><table class="materials"><thead><tr><th>' + esc(t('Material')) + '</th>' + head('E', 'GPa') + head('ρ', 'kg/m³') + head('σ₀.₂', 'MPa') + head('σ_max', 'MPa') + head('σ_fatigue', 'MPa') + head('α', 'µm/m·K') + head('c', 'J/kg·K') + head('λ', 'W/m·K') + '<th>ν (' + esc(t('typ.')) + ')</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
   // ------------------------------------------------------------------ Language
@@ -567,16 +591,37 @@
     });
   }
 
-  function setLanguage(code) {
-    PEC.i18n.setLang(code);
-    applyStaticTexts();
-    if ($('#library').open) renderLibrary();
+  function rerender() {
     if (state.def) {
       renderNav($('#search').value);
       renderCalc();
     } else {
       openMaterials();
     }
+  }
+
+  function setLanguage(code) {
+    PEC.i18n.setLang(code);
+    applyStaticTexts();
+    if ($('#library').open) renderLibrary();
+    rerender();
+  }
+
+  // ------------------------------------------------------------------ Unit system
+  function initUnits() {
+    var btns = document.querySelectorAll('#unitSwitch [data-units]');
+    function sync() {
+      btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.units === U.system())); });
+    }
+    btns.forEach(function (b) {
+      b.onclick = function () {
+        if (b.dataset.units === U.system()) return;
+        U.set(b.dataset.units);
+        sync();
+        rerender();
+      };
+    });
+    sync();
   }
 
   function initLanguage() {
@@ -607,6 +652,7 @@
 
   function init() {
     initLanguage();
+    initUnits();
     renderNav('');
     $('#nav').addEventListener('click', function (e) {
       var b = e.target.closest('[data-calc]');

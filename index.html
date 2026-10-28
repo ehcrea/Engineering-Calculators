@@ -18,6 +18,9 @@
     <h1><span data-i18n="Precision Engineering Calculators">Precision Engineering Calculators</span> <small data-i18n="formulas from JPE Precision Point">formulas from JPE Precision Point</small></h1>
     <div class="spacer"></div>
     <div class="toolbar">
+      <div class="seg" id="unitSwitch" role="group" aria-label="Unit system" title="Switch between metric (SI) and US customary units" data-i18n-aria-label="Unit system" data-i18n-title="Switch between metric (SI) and US customary units">
+        <button type="button" data-units="metric" aria-pressed="true"><span class="long" data-i18n="Metric">Metric</span><span class="short">SI</span></button><button type="button" data-units="us" aria-pressed="false">US</button>
+      </div>
       <select class="btn lang-select" id="langSelect" aria-label="Language" title="Language" data-i18n-title="Language" data-i18n-aria-label="Language"></select>
       <button class="btn" id="btnLibrary" title="Saved calculations, JSON import/export" data-i18n="Saved" data-i18n-title="Saved calculations, JSON import/export">Saved</button>
       <button class="btn" id="btnTheme" title="Toggle light/dark theme" aria-label="Toggle theme" data-i18n-title="Toggle light/dark theme" data-i18n-aria-label="Toggle theme"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>

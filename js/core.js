@@ -21,8 +21,52 @@
     'm/s': 1, 'mm/s': 1e-3,
     'm/s²': 1, 'mm/s²': 1e-3, 'g₀': 9.80665,
     'm/s³': 1, 'mm/s³': 1e-3,
-    'K': 1, '1/K': 1, 'µm/m·K': 1e-6
+    'K': 1, '1/K': 1, 'µm/m·K': 1e-6, 'J/kg·K': 1, 'W/m·K': 1,
+    // US customary
+    'in': 0.0254, 'ft': 0.3048, 'mil': 2.54e-5, 'µin': 2.54e-8,
+    'in²': 6.4516e-4, 'in³': 1.6387064e-5, 'in⁴': 4.162314256e-7,
+    'lbf': 4.4482216152605, 'lbf/in': 175.126835246476,
+    'lbf·in': 0.112984829027617, 'lbf·in/rad': 0.112984829027617, 'lbf·in²': 0.00286981465730147,
+    'psi': 6894.75729316836, 'ksi': 6894757.29316836, 'Msi': 6894757293.16836,
+    'lb': 0.45359237, 'lb/in³': 27679.9047102031,
+    'in/s': 0.0254, 'in/s²': 0.0254, 'in/s³': 0.0254,
+    '°F': 5 / 9, 'µin/in·°F': 1.8e-6, 'Btu/lb·°F': 4186.8, 'Btu/h·ft·°F': 1.73073466637139
   };
+
+  // Unit systems: calculators declare metric units; in the US system each one is shown in its
+  // US customary counterpart. Units without an entry (ratios, angles, time, frequency) stay as they are.
+  var US_UNITS = {
+    'mm': 'in', 'm': 'ft', 'µm': 'µin', 'nm': 'µin',
+    'mm²': 'in²', 'm²': 'in²', 'mm³': 'in³', 'mm⁴': 'in⁴', 'm⁴': 'in⁴',
+    'N': 'lbf', 'kN': 'lbf', 'mN': 'lbf',
+    'N/m': 'lbf/in', 'N/mm': 'lbf/in', 'N/µm': 'lbf/in',
+    'Nm': 'lbf·in', 'Nmm': 'lbf·in', 'mNm': 'lbf·in', 'Nm²': 'lbf·in²',
+    'Nm/rad': 'lbf·in/rad', 'Nmm/rad': 'lbf·in/rad', 'Nm/mrad': 'lbf·in/rad',
+    'Pa': 'psi', 'MPa': 'ksi', 'GPa': 'Msi',
+    'kg': 'lb', 'g': 'lb', 'kg/m³': 'lb/in³',
+    'm/s': 'in/s', 'mm/s': 'in/s', 'm/s²': 'in/s²', 'mm/s²': 'in/s²', 'm/s³': 'in/s³', 'mm/s³': 'in/s³',
+    'K': '°F', 'µm/m·K': 'µin/in·°F', 'J/kg·K': 'Btu/lb·°F', 'W/m·K': 'Btu/h·ft·°F'
+  };
+  var SYSTEMS = ['metric', 'us'];
+  var UNITS_KEY = 'pec:v1:units';
+  var system = 'metric';
+
+  function setSystem(s, persist) {
+    system = SYSTEMS.indexOf(s) >= 0 ? s : 'metric';
+    if (persist !== false) { try { root.localStorage.setItem(UNITS_KEY, system); } catch (e) { /* ignore */ } }
+    return system;
+  }
+  try { if (root.localStorage) setSystem(root.localStorage.getItem(UNITS_KEY), false); } catch (e) { /* ignore */ }
+
+  // Unit shown for a declared (metric) unit in the current system.
+  function du(unit) { return system === 'us' && US_UNITS[unit] ? US_UNITS[unit] : unit; }
+
+  // Convert between a value in a declared unit and the same value in its display unit.
+  function toDisplay(value, unit) { return du(unit) === unit ? value : fromSI(toSI(value, unit), du(unit)); }
+  function fromDisplay(value, unit) { return du(unit) === unit ? value : fromSI(toSI(value, du(unit)), unit); }
+
+  // "value unit" text for an SI value, in the display unit of `unit`.
+  function q(si, unit, digits) { return fmt(fromSI(si, du(unit)), digits) + ' ' + du(unit); }
 
   function toSI(value, unit) {
     var f = UNITS[unit];
@@ -101,7 +145,9 @@
     res.results = (res.results || []).map(function (r) {
       if (r.type === 'heading') return r;
       var out = Object.assign({}, r);
-      if (typeof r.value === 'number' && r.unit) out.display = fromSI(r.value, r.unit);
+      // `value` stays SI; `unit` and `display` follow the current unit system.
+      out.unit = du(r.unit);
+      if (typeof r.value === 'number' && r.unit) out.display = fromSI(r.value, out.unit);
       else out.display = r.value;
       return out;
     });
@@ -124,6 +170,7 @@
 
   root.PEC = Object.assign(root.PEC || {}, {
     UNITS: UNITS, toSI: toSI, fromSI: fromSI, fmt: fmt,
+    units: { US: US_UNITS, set: setSystem, system: function () { return system; }, du: du, toDisplay: toDisplay, fromDisplay: fromDisplay, q: q },
     register: register, get: get, list: registry,
     defaults: defaults, inputsToSI: inputsToSI, run: run,
     inf: inf, G: shearModulus, r: r, h: h
