@@ -40,12 +40,12 @@
     });
     var cur = state.def ? state.def.id : (location.hash === '#/' + MATERIALS_VIEW ? MATERIALS_VIEW : '');
     var html = Object.keys(groups).map(function (g) {
-      return '<div class="nav-group"><h3>' + esc(t(g)) + '</h3>' + groups[g].map(function (d) {
-        return '<button class="nav-item' + (d.id === cur ? ' active' : '') + '" data-calc="' + d.id + '">' + esc(t(d.title)) + '</button>';
+      return '<div class="nav-group"><h2>' + esc(t(g)) + '</h2>' + groups[g].map(function (d) {
+        return '<button class="nav-item' + (d.id === cur ? ' active" aria-current="page' : '') + '" data-calc="' + d.id + '">' + esc(t(d.title)) + '</button>';
       }).join('') + '</div>';
     }).join('');
     if (!f || ['materials properties reference', t('Reference'), t('Material properties')].join(' ').toLowerCase().indexOf(f) >= 0) {
-      html += '<div class="nav-group"><h3>' + esc(t('Reference')) + '</h3><button class="nav-item' + (cur === MATERIALS_VIEW ? ' active' : '') + '" data-calc="' + MATERIALS_VIEW + '">' + esc(t('Material properties')) + '</button></div>';
+      html += '<div class="nav-group"><h2>' + esc(t('Reference')) + '</h2><button class="nav-item' + (cur === MATERIALS_VIEW ? ' active" aria-current="page' : '') + '" data-calc="' + MATERIALS_VIEW + '">' + esc(t('Material properties')) + '</button></div>';
     }
     $('#nav').innerHTML = html || '<p class="empty">' + esc(t('No calculator matches.')) + '</p>';
   }
@@ -71,11 +71,14 @@
           return '<option value="' + esc(o.v) + '"' + (String(o.v) === String(v) ? ' selected' : '') + '>' + esc(t(o.label)) + '</option>';
         }).join('') + '</select></div>';
     }
+    // Screen readers announce the unit (and hint) together with the label.
+    var desc = [unitText(inp.unit) ? id + '_u' : '', inp.hint ? id + '_h' : ''].filter(Boolean).join(' ');
+    var described = desc ? ' aria-describedby="' + desc + '"' : '';
     return '<div class="field" data-field="' + inp.id + '"' + hidden + '>' +
       '<label for="' + id + '">' + esc(t(inp.label)) + (inp.sym ? '<span class="sym">' + symHtml(inp.sym) + '</span>' : '') + '</label>' +
-      '<input id="' + id + '" data-id="' + inp.id + '" type="text" inputmode="decimal" autocomplete="off" value="' + esc(v === undefined || v === null ? '' : v) + '"' + (inp.optional ? ' placeholder="—"' : '') + '>' +
-      '<span class="unit">' + esc(unitText(inp.unit)) + '</span>' +
-      (inp.hint ? '<span class="hint">' + esc(t(inp.hint)) + '</span>' : '') + '</div>';
+      '<input id="' + id + '" data-id="' + inp.id + '" type="text" inputmode="decimal" autocomplete="off" value="' + esc(v === undefined || v === null ? '' : v) + '"' + (inp.optional ? ' placeholder="—"' : '') + described + '>' +
+      '<span class="unit" id="' + id + '_u">' + esc(unitText(inp.unit)) + '</span>' +
+      (inp.hint ? '<span class="hint" id="' + id + '_h">' + esc(t(inp.hint)) + '</span>' : '') + '</div>';
   }
 
   function unitText(unit) { return unit === '-' ? '' : U.du(unit || ''); }
@@ -171,12 +174,12 @@
       '<div class="grid">' +
       '<form class="card" id="form" autocomplete="off" onsubmit="return false">' + form +
       '<div class="project"><div class="form-section">' + esc(t('Report')) + '</div>' +
-      '<input id="f__project" data-id="_project" placeholder="' + esc(t('Project / reference')) + '" value="' + esc(v._project || '') + '">' +
-      '<textarea id="f__notes" data-id="_notes" placeholder="' + esc(t('Notes (included in the PDF)')) + '">' + esc(v._notes || '') + '</textarea></div>' +
+      '<input id="f__project" data-id="_project" placeholder="' + esc(t('Project / reference')) + '" aria-label="' + esc(t('Project / reference')) + '" value="' + esc(v._project || '') + '">' +
+      '<textarea id="f__notes" data-id="_notes" placeholder="' + esc(t('Notes (included in the PDF)')) + '" aria-label="' + esc(t('Notes (included in the PDF)')) + '">' + esc(v._notes || '') + '</textarea></div>' +
       '</form>' +
       '<div><div class="card preview" id="previewCard" hidden><div class="preview-head"><h3>' + esc(t('Geometry')) + '</h3>' +
       (PEC.preview.animates(def.id) ? '<button class="btn small" id="btnAnim" aria-pressed="false" title="' + esc(t('Animate the sketch: load, deflect and release')) + '">' + esc(t('▶ Animate')) + '</button>' : '') +
-      '</div><div id="preview"></div><p class="preview-caption" id="previewCaption" hidden></p><p class="preview-notes" id="previewNotes"></p></div>' +
+      '</div><div id="preview" role="img" aria-label="' + esc(t('Geometry sketch: {name}', { name: t(def.title) })) + '" aria-describedby="previewNotes"></div><p class="preview-caption" id="previewCaption" hidden></p><p class="preview-notes" id="previewNotes"></p></div>' +
       '<div class="card"><h3>' + esc(t('Results')) + '</h3><div id="warnings"></div><table class="results"><tbody id="results"></tbody></table><div class="charts" id="charts"></div></div>' +
       '<div class="card formulas"><h3>' + esc(t('Formulas')) + '</h3><ul id="formulas"></ul>' +
       '<p class="disclaimer">' + t('Formulas from the free {link} resource. This is an independent tool, not affiliated with JPE. Check results before relying on them for critical designs.', { link: '<a href="https://www.jpe-innovations.com/precision-point/" target="_blank" rel="noopener">JPE Precision Point</a>' }) + '</p></div></div>' +
@@ -230,7 +233,7 @@
       var empty = raw === '' || raw === null || raw === undefined;
       var invalid = visible(inp, state.values) && ((empty && !inp.optional) || (!empty && !isFinite(parseNum(raw))));
       var el = $('#f_' + inp.id);
-      if (el) el.classList.toggle('invalid', invalid);
+      if (el) { el.classList.toggle('invalid', invalid); if (invalid) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); }
       if (invalid) bad.push(t(inp.label));
     });
     return bad;
@@ -341,10 +344,10 @@
     if (!t) return '';
     var list = function (items) { return '<ul>' + items.map(function (x) { return '<li>' + symHtml(PEC.t(x)) + '</li>'; }).join('') + '</ul>'; };
     return '<span class="help"><button type="button" class="help-btn" id="helpBtn" aria-label="' + esc(PEC.t('Theory: how it works')) + '" aria-expanded="false" aria-controls="helpPop">?</button>' +
-      '<div class="help-pop" id="helpPop" role="dialog" aria-label="' + esc(PEC.t('Theory')) + '" hidden>' +
-      '<h4>' + esc(PEC.t('How it works')) + '</h4><p>' + symHtml(PEC.t(t.intro)) + '</p>' +
-      (t.points && t.points.length ? '<h5>' + esc(PEC.t('Key points')) + '</h5>' + list(t.points) : '') +
-      (t.assumptions && t.assumptions.length ? '<h5>' + esc(PEC.t('Assumptions')) + '</h5>' + list(t.assumptions) : '') +
+      '<div class="help-pop" id="helpPop" role="region" aria-label="' + esc(PEC.t('Theory')) + '" hidden>' +
+      '<h3>' + esc(PEC.t('How it works')) + '</h3><p>' + symHtml(PEC.t(t.intro)) + '</p>' +
+      (t.points && t.points.length ? '<h4>' + esc(PEC.t('Key points')) + '</h4>' + list(t.points) : '') +
+      (t.assumptions && t.assumptions.length ? '<h4>' + esc(PEC.t('Assumptions')) + '</h4>' + list(t.assumptions) : '') +
       (PEC.preview.animates(def.id) ? '<p class="help-tip">' + esc(PEC.t('Tip: press ▶ Animate on the sketch to see the motion.')) + '</p>' : '') +
       '<p class="help-src"><a href="' + esc(def.source) + '" target="_blank" rel="noopener">' + esc(PEC.t('Full article on JPE Precision Point')) + '</a></p>' +
       '</div></span>';
@@ -361,13 +364,14 @@
     function pinned() { return btn.dataset.pinned === '1'; }
     // Hover opens it (with a short grace period to move the mouse into the panel); a click or tap pins it open.
     wrap.addEventListener('mouseenter', function () { show(true); });
-    wrap.addEventListener('mouseleave', function () { if (!pinned()) timer = setTimeout(function () { show(false); }, 250); });
+    wrap.addEventListener('mouseleave', function () { if (!pinned() && !wrap.contains(document.activeElement)) timer = setTimeout(function () { show(false); }, 250); });
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       if (pinned()) show(false); else { show(true); btn.dataset.pinned = '1'; }
     });
     btn.addEventListener('focus', function () { show(true); });
-    btn.addEventListener('blur', function () { if (!pinned()) timer = setTimeout(function () { if (!wrap.contains(document.activeElement)) show(false); }, 150); });
+    // Close once keyboard focus leaves the button and the panel, so it never covers what gets focus next.
+    wrap.addEventListener('focusout', function () { timer = setTimeout(function () { if (!wrap.contains(document.activeElement) && !wrap.matches(':hover')) show(false); }, 150); });
     pop.addEventListener('click', function (e) { e.stopPropagation(); });
   }
 
@@ -629,7 +633,7 @@
     // Phones show the short language code so the header keeps room for the title.
     function options() {
       sel.innerHTML = PEC.i18n.LANGS.map(function (l) {
-        return '<option value="' + l.code + '"' + (l.code === PEC.i18n.lang() ? ' selected' : '') + '>' + esc(narrow.matches ? l.code.toUpperCase() : l.name) + '</option>';
+        return '<option value="' + l.code + '" lang="' + l.code + '"' + (l.code === PEC.i18n.lang() ? ' selected' : '') + '>' + esc(narrow.matches ? l.code.toUpperCase() : l.name) + '</option>';
       }).join('');
     }
     options();
@@ -662,10 +666,14 @@
       history.replaceState(null, '', store.toHash(state.def.id, state.values));
     });
     $('#search').addEventListener('input', function (e) { renderNav(e.target.value); });
+    // Skip link: move focus to the calculator without touching the URL hash (it holds the inputs).
+    $('.skip-link').addEventListener('click', function (e) { e.preventDefault(); $('#main').focus(); });
     // Close the theory panel on an outside click or Escape.
     document.addEventListener('click', function () { if ($('#helpPop') && !$('#helpPop').hidden) showHelp(false); });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && $('#helpPop') && !$('#helpPop').hidden) { showHelp(false); $('#helpBtn').focus(); }
+      if (e.key !== 'Escape') return;
+      if ($('#helpPop') && !$('#helpPop').hidden) { showHelp(false); $('#helpBtn').focus(); }
+      else if (document.body.classList.contains('nav-open')) { document.body.classList.remove('nav-open'); syncMenu(); $('#menuToggle').focus(); }
     });
     // Menu button: on phones it opens the calculator list as an overlay; on wider screens it
     // collapses the list so the calculator gets the full page width (remembered per browser).

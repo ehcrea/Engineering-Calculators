@@ -83,6 +83,14 @@
     ctx.beginPath();
     xs.forEach(function (x, k) { if (k) ctx.lineTo(X(x), Y(ys[k])); else ctx.moveTo(X(x), Y(ys[k])); });
     ctx.stroke();
+
+    // Text alternative for screen readers: what is plotted and over which range.
+    var ylo = Math.min.apply(null, ys), yhi = Math.max.apply(null, ys);
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute('aria-label', PEC.t('Chart: {title}. {y} from {y0} to {y1} {yu} over {x} from {x0} to {x1} {xu}.', {
+      title: PEC.t(spec.title), y: ser.label, y0: PEC.fmt(ylo, 3), y1: PEC.fmt(yhi, 3), yu: yu,
+      x: spec.x.label, x0: PEC.fmt(xmin, 3), x1: PEC.fmt(xmax, 3), xu: xu
+    }));
   }
 
   PEC.chart = { draw: draw };
