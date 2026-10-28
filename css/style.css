@@ -66,6 +66,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn.danger { color: var(--bad); }
 .toolbar { display: flex; flex-wrap: wrap; gap: 6px; }
 select.btn.lang-select { padding-right: 6px; appearance: auto; }
+/* Segmented switch (unit system) */
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.seg button { font: inherit; font-size: 13px; color: inherit; background: var(--surface); border: 0; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button:hover { background: var(--surface-2); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.seg .short { display: none; }
 
 /* Layout */
 .layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 53px); }
@@ -205,6 +213,9 @@ dialog::backdrop { background: rgb(0 0 0 / .35); }
   body.nav-open .sidebar { display: block; }
   body.nav-collapsed .layout { grid-template-columns: 1fr; }
   .topbar h1 small { display: none; }
+  .seg button { padding: 6px 8px; }
+  .seg .long { display: none; }
+  .seg .short { display: inline; }
   .topbar { gap: 8px; padding: 10px 12px; }
   .topbar h1 { font-size: 15px; }
   main { padding: 16px 16px 40px; }

@@ -181,6 +181,32 @@ PEC.i18n.LANGS.filter(function (l) { return l.code !== 'en'; }).forEach(function
 PEC.i18n.setLang('en', false);
 ok(PEC.t('Saved "{name}"', { name: 'X' }) === 'Saved "X"', 'English fallback fills placeholders');
 
+// US customary units: every US unit has a factor, conversions are exact, results keep SI values.
+var U = PEC.units;
+Object.keys(U.US).forEach(function (m) { ok(PEC.UNITS[U.US[m]] !== undefined, 'US unit defined: ' + U.US[m]); });
+close(U.toDisplay(25.4, 'mm'), 25.4, 1e-12, 'metric system shows metric units');
+U.set('us', false);
+close(U.toDisplay(25.4, 'mm'), 1, 1e-12, '25.4 mm = 1 in');
+close(U.toDisplay(4.4482216152605, 'N'), 1, 1e-12, '1 lbf');
+close(U.toDisplay(6.894757293168, 'MPa'), 1, 1e-9, '1 ksi');
+close(U.toDisplay(200, 'GPa'), 29.0075, 1e-5, '200 GPa in Msi');
+close(U.toDisplay(1, 'K'), 1.8, 1e-12, '1 K = 1.8 °F');
+close(U.toDisplay(23.1, 'µm/m·K'), 12.8333, 1e-5, 'α in µin/in·°F');
+close(U.fromDisplay(U.toDisplay(0.3, 'mm'), 'mm'), 0.3, 1e-12, 'round trip');
+ok(U.du('deg') === 'deg' && U.du('ms') === 'ms' && U.du('-') === '-', 'angles, time and ratios keep their units');
+var usRes = PEC.run(PEC.get('beam-bending'), PEC.defaults(PEC.get('beam-bending')));
+var usDefl = usRes.results.filter(function (r) { return r.sym === 'δy_max'; })[0];
+ok(usDefl.unit === 'µin', 'result unit follows the system: ' + usDefl.unit);
+close(usDefl.display, usDefl.value / 2.54e-8, 1e-12, 'result display in µin');
+PEC.list.filter(function (d) { return PEC.preview.has(d.id); }).forEach(function (def) {
+  var v = PEC.defaults(def), res = PEC.run(def, v);
+  [undefined, 0.5].forEach(function (ph) {
+    var p = PEC.preview.render(def.id, PEC.inputsToSI(def, v), res, COLORS, ph);
+    ok(p && !/NaN|Infinity|undefined|\b(mm|µm|MPa|GPa|N\/µm|kg)\b/.test(p.svg + (p.caption || '')), 'US preview has only US units: ' + def.id + ' @' + ph);
+  });
+});
+U.set('metric', false);
+
 // Formatting
 ok(PEC.fmt(0.0000125) === '1.25·10⁻⁵', 'fmt small: ' + PEC.fmt(0.0000125));
 ok(PEC.fmt(123.456) === '123.5', 'fmt normal: ' + PEC.fmt(123.456));

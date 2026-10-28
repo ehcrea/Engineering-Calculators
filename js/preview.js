@@ -18,8 +18,10 @@
   function attrs(a) {
     return Object.keys(a || {}).map(function (k) { return a[k] === undefined || a[k] === null ? '' : ' ' + k + '="' + esc(a[k]) + '"'; }).join('');
   }
-  // Format a length (SI metres) in mm for labels.
-  function mm(v) { return PEC.fmt(v * 1e3, 3) + ' mm'; }
+  // "value unit" label for an SI value, in the current unit system (`unit` is the metric unit).
+  function qty(v, unit) { return PEC.units.q(v, unit, 3); }
+  // Format a length (SI metres) in mm (or inches) for labels.
+  function mm(v) { return qty(v, 'mm'); }
   // Translate sketch text (notes stay in English here and are translated where they are shown).
   function T(str, vars) { return PEC.t(str, vars); }
 
@@ -155,7 +157,7 @@
       s.dim(x0, y0 + H, x0 + W, y0 + H, lab[0] + ' = ' + mm(dims[0]), 16);
       if (lab[1]) s.dim(x0, y0, x0, y0 + H, lab[1] + ' = ' + mm(dims[1]), 16);
       if (i.shape === 'tube') s.text(cx, y0 + H + 42, 'dᵢ = ' + mm(i.di), { fill: c.muted, 'font-size': 11 });
-      if (i.shape === 'hollowRect') s.text(cx, y0 + H + 42, 'wᵢ × hᵢ = ' + PEC.fmt(i.wi * 1e3, 3) + ' × ' + PEC.fmt(i.hi * 1e3, 3) + ' mm', { fill: c.muted, 'font-size': 11 });
+      if (i.shape === 'hollowRect') s.text(cx, y0 + H + 42, 'wᵢ × hᵢ = ' + PEC.fmt(PEC.units.toDisplay(i.wi * 1e3, 'mm'), 3) + ' × ' + mm(i.hi), { fill: c.muted, 'font-size': 11 });
       if (i.shape === 'ibeam') s.text(cx, y0 + H + 42, 't₁ = ' + mm(i.t1) + ', t₂ = ' + mm(i.t2), { fill: c.muted, 'font-size': 11 });
     }
     return notes;
@@ -462,7 +464,7 @@
       if (anim < 0.4) { fr = smooth(anim / 0.4); bow = 0; cap = T('F < F_b: the column stays straight'); }
       else if (anim < 0.7) { fr = 1; bow = smooth((anim - 0.4) / 0.15); cap = T('F = F_b: the column buckles sideways in this mode'); }
       else { fr = 1 - smooth((anim - 0.7) / 0.25); bow = fr; cap = T('load removed: the column springs back (elastic)'); }
-      if (fb) cap = T('F = {F} N ({p} % of F_b)', { F: PEC.fmt(fr * fb.value, 3), p: Math.round(fr * 100) }) + ' · ' + cap;
+      if (fb) cap = T('F = {F} ({p} % of F_b)', { F: qty(fr * fb.value, 'N'), p: Math.round(fr * 100) }) + ' · ' + cap;
     }
     var amp = 30 * bow, f = modeShape(k), tip = amp * f(1), q, z, pts = [];
 
@@ -547,7 +549,7 @@
     var dz = anim === undefined ? 0 : 6 * Math.pow(lf, 2 / 3), fl = anim === undefined ? 0 : 10 * Math.cbrt(lf);
     var rs = [i.r1x, i.r1y, i.r2x, i.r2y].map(PEC.inf).filter(isFinite).map(Math.abs);
     var kpx = rs.length ? 40 / Math.min.apply(null, rs) : 1;
-    function lab(r) { r = PEC.inf(r); return isFinite(r) ? PEC.fmt(r * 1e3, 3) + ' mm' : T('flat'); }
+    function lab(r) { r = PEC.inf(r); return isFinite(r) ? mm(r) : T('flat'); }
     hertzView(s, 110, 140, PEC.inf(i.r1x), PEC.inf(i.r2x), 'x–z: r₁ₓ = ' + lab(i.r1x) + ', r₂ₓ = ' + lab(i.r2x), kpx, dz, fl);
     hertzView(s, 300, 140, PEC.inf(i.r1y), PEC.inf(i.r2y), 'y–z: r₁ᵧ = ' + lab(i.r1y) + ', r₂ᵧ = ' + lab(i.r2y), kpx, dz, fl);
     if (lf > 0.05) s.arrow(205, 80 - 40 * lf, 205, 80);
@@ -561,16 +563,16 @@
       var ex = 410, ey = 140, ka = 30 / A.value, ce = Math.cbrt(lf);
       s.text(ex, 60, T('Contact'), { 'font-weight': 600, 'font-size': 11 });
       s.add('<ellipse' + attrs({ cx: ex, cy: ey, rx: n(30 * ce), ry: n(Math.max(B.value * ka * ce, 1.5)), fill: c.accentSoft, stroke: c.accent, 'stroke-width': 1.5 }) + '/>');
-      s.text(ex, ey + 50, '2a = ' + PEC.fmt(2 * A.value * 1e6, 3) + ' µm', { fill: c.muted, 'font-size': 10 });
-      s.text(ex, ey + 64, '2b = ' + PEC.fmt(2 * B.value * 1e6, 3) + ' µm', { fill: c.muted, 'font-size': 10 });
+      s.text(ex, ey + 50, '2a = ' + qty(2 * A.value, 'µm'), { fill: c.muted, 'font-size': 10 });
+      s.text(ex, ey + 64, '2b = ' + qty(2 * B.value, 'µm'), { fill: c.muted, 'font-size': 10 });
     }
     if (dz) notes.push('approach exaggerated for clarity');
     // Hertz: δ ∝ F^(2/3), contact size ∝ F^(1/3), pressure ∝ F^(1/3).
     var dl = resItem(res, 'δ'), pm = resItem(res, 'σ_max');
     return { svg: s.toString(), notes: notes, caption: caption(lf, [
-      'F = ' + PEC.fmt(lf * i.F, 3) + ' N',
-      dl ? 'δ = ' + PEC.fmt(PEC.fromSI(Math.pow(lf, 2 / 3) * dl.value, 'µm'), 3) + ' µm' : '',
-      pm ? 'σ_max = ' + PEC.fmt(PEC.fromSI(Math.cbrt(lf) * pm.value, 'MPa'), 3) + ' MPa' : ''
+      'F = ' + qty(lf * i.F, 'N'),
+      dl ? 'δ = ' + qty(Math.pow(lf, 2 / 3) * dl.value, 'µm') : '',
+      pm ? 'σ_max = ' + qty(Math.cbrt(lf) * pm.value, 'MPa') : ''
     ]) };
   }
 
@@ -600,21 +602,21 @@
       cs.forEach(function (o, q) {
         var y1 = top + q * seg, y2 = y1 + seg - 6;
         s.path(zigzag(x, y1, x, y2, 4), { 'stroke-width': 1.5 });
-        s.text(x + 60, (y1 + y2) / 2, o.name + ' = ' + PEC.fmt(o.v / 1e6, 3) + ' N/µm', { 'font-size': 11, 'text-anchor': 'start', x: x + 20 });
+        s.text(x + 60, (y1 + y2) / 2, o.name + ' = ' + qty(o.v, 'N/µm'), { 'font-size': 11, 'text-anchor': 'start', x: x + 20 });
         if (q < cs.length - 1) s.rect(x - 14, y2, 28, 6, { fill: c.fill2 });
       });
       s.rect(x - 50, top + 150 + off - 6, 100, 34, { fill: mass ? c.fill2 : c.fill });
-      if (mass) s.text(x, top + 161 + off, 'm = ' + PEC.fmt(i.m, 3) + ' kg', { 'font-size': 11 });
+      if (mass) s.text(x, top + 161 + off, 'm = ' + qty(i.m, 'kg'), { 'font-size': 11 });
     } else {
       var w = 300 / cs.length;
       cs.forEach(function (o, q) {
         var xq = 60 + w * (q + 0.5);
         s.path(zigzag(xq, 36, xq, 170 + off, 5), { 'stroke-width': 1.5 });
         s.text(xq, 216, o.name, { 'font-size': 11 });
-        s.text(xq, 230, PEC.fmt(o.v / 1e6, 3) + ' N/µm', { 'font-size': 10, fill: c.muted });
+        s.text(xq, 230, qty(o.v, 'N/µm'), { 'font-size': 10, fill: c.muted });
       });
       s.rect(40, 170 + off, 340, 26, { fill: mass ? c.fill2 : c.fill });
-      if (mass) s.text(210, 183 + off, 'm = ' + PEC.fmt(i.m, 3) + ' kg', { 'font-size': 11 });
+      if (mass) s.text(210, 183 + off, 'm = ' + qty(i.m, 'kg'), { 'font-size': 11 });
     }
     var f0 = resText(res, 'f₀');
     return { svg: s.toString(), notes: [], schematic: true, caption: anim === undefined ? '' : (f0 ? T('free vibration at {f} (slowed down, amplitude exaggerated)', { f: f0 }) : T('enter a mass m to get the eigenfrequency')) };
@@ -630,22 +632,22 @@
       if (anim < 0.4) { xm = 60 * anim / 0.4; cap = T('approach at v₀'); }
       else if (anim < 0.6) { fr = Math.sin(PI * (anim - 0.4) / 0.2); xm = 60; u = 45 * fr; cap = T('contact: the spring decelerates the mass'); dir = anim < 0.5 ? 1 : -1; }
       else { xm = 60 * (1 - (anim - 0.6) / 0.4); dir = -1; cap = T('rebound at −v₀ (no damping)'); }
-      if (Fm) cap += ' · F = ' + PEC.fmt(fr * Fm.value, 3) + ' N';
+      if (Fm) cap += ' · F = ' + qty(fr * Fm.value, 'N');
     }
     var C = rigid ? i.C1 : 1 / (1 / i.C1 + 1 / i.C2), u2 = rigid ? 0 : u * C / i.C2;
     s.rect(xm + u, 50, 80, 60, { fill: c.fill2 });
-    s.text(xm + u + 40, 80, 'm = ' + PEC.fmt(i.m, 3) + ' kg', { 'font-size': 11 });
+    s.text(xm + u + 40, 80, 'm = ' + qty(i.m, 'kg'), { 'font-size': 11 });
     if (anim === undefined || u < 40) {
       var ax = xm + u + 20;
       if (dir > 0) s.arrow(ax, 130, ax + 60, 130); else s.arrow(ax + 60, 130, ax, 130);
-      s.text(ax + 30, 146, (anim !== undefined && dir < 0 ? '−' : '') + 'v₀ = ' + PEC.fmt(i.v0 * 1e3, 3) + ' mm/s', { fill: c.accent, 'font-size': 11 });
+      s.text(ax + 30, 146, (anim !== undefined && dir < 0 ? '−' : '') + 'v₀ = ' + qty(i.v0, 'mm/s'), { fill: c.accent, 'font-size': 11 });
     }
     s.path(zigzag(140 + u, 80, rigid ? 360 : 250 + u2, 80, 5));
-    s.text(rigid ? 250 : 195, 58, 'C₁ = ' + PEC.fmt(i.C1 / 1e6, 3) + ' N/µm', { 'font-size': 11 });
+    s.text(rigid ? 250 : 195, 58, 'C₁ = ' + qty(i.C1, 'N/µm'), { 'font-size': 11 });
     if (!rigid) {
       s.rect(250 + u2, 70, 8, 20, { fill: c.fill2 });
       s.path(zigzag(258 + u2, 80, 360, 80, 4));
-      s.text(309, 58, 'C₂ = ' + PEC.fmt(i.C2 / 1e6, 3) + ' N/µm', { 'font-size': 11 });
+      s.text(309, 58, 'C₂ = ' + qty(i.C2, 'N/µm'), { 'font-size': 11 });
     }
     s.ground(360, 30, 20, 100);
     return { svg: s.toString(), notes: [], schematic: true, caption: cap };
@@ -669,7 +671,7 @@
     if (vl > 3) s.arrow(xp + w / 2, 58, xp + w / 2 + vl, 58);
     s.text(xp + w / 2, 44, 'v', { fill: c.accent, 'font-style': 'italic' });
     s.dim(x0 + w / 2, 150, x1 + w / 2, 150, 's = ' + mm(i.s), 14);
-    var cap = anim === undefined ? '' : 't = ' + PEC.fmt(t * 1e3, 3) + ' ms · p = ' + PEC.fmt(st.p * 1e3, 3) + ' mm · v = ' + PEC.fmt(st.v * 1e3, 3) + ' mm/s · a = ' + PEC.fmt(Math.abs(st.a) < 1e-9 * i.a ? 0 : st.a, 3) + ' m/s²';
+    var cap = anim === undefined ? '' : 't = ' + PEC.fmt(t * 1e3, 3) + ' ms · p = ' + qty(st.p, 'mm') + ' · v = ' + qty(st.v, 'mm/s') + ' · a = ' + qty(Math.abs(st.a) < 1e-9 * i.a ? 0 : st.a, 'm/s²');
     return { svg: s.toString(), notes: anim === undefined ? [] : ['slowed down to about 2.5 s per move'], schematic: true, caption: cap };
   }
 

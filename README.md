@@ -45,6 +45,10 @@ The site is available in **English, German, Dutch and Turkish**. Pick a language
 choice is remembered in the browser. It covers the whole interface, calculator labels and results,
 warnings, sketches, the theory notes and the PDF report.
 
+The **Metric / US** switch in the header shows every input and result in metric (SI) or US customary
+units (in, µin, lbf, ksi, Msi, lb, °F, …) and converts the values on the spot. Calculations are always
+saved in metric units, so saved calculations, JSON files and share links open correctly in either system.
+
 Each calculator links to its source article and lists the formulas it uses. Stress results are checked
 against a fatigue (dynamic) or yield (static) limit with an optional safety factor, as JPE recommends.
 
@@ -76,7 +80,8 @@ Opening `index.html` directly from disk also works.
 
 Calculators are plain objects registered with `PEC.register({...})` in `js/calculators/*.js`:
 
-- `inputs` lists fields with a display unit (for example `mm`, `GPa`, `N/µm`).
+- `inputs` lists fields with a metric display unit (for example `mm`, `GPa`, `N/µm`). The US counterpart
+  of each unit is in `US_UNITS` in `js/core.js`; a new metric unit needs an entry there.
 - `compute(i)` receives every value **in SI units** and returns result rows with their display units.
 
 Unit conversion, the form, saving and the PDF are handled for you. Add a theory note to `js/theory.js`,

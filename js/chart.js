@@ -30,9 +30,9 @@
     ctx.fillStyle = c.bg;
     ctx.fillRect(0, 0, W, H);
 
-    var xs = spec.x.values.map(function (v) { return PEC.fromSI(v, spec.x.unit); });
-    var ser = spec.series[0];
-    var ys = ser.values.map(function (v) { return PEC.fromSI(v, ser.unit); });
+    var du = PEC.units.du, xu = du(spec.x.unit), ser = spec.series[0], yu = du(ser.unit);
+    var xs = spec.x.values.map(function (v) { return PEC.fromSI(v, xu); });
+    var ys = ser.values.map(function (v) { return PEC.fromSI(v, yu); });
     var xmin = Math.min.apply(null, xs), xmax = Math.max.apply(null, xs);
     var ymin = Math.min(0, Math.min.apply(null, ys)), ymax = Math.max(0, Math.max.apply(null, ys));
     var pad = (ymax - ymin) * 0.08 || 1;
@@ -52,7 +52,7 @@
     ctx.fillStyle = c.fg;
     ctx.font = '600 13px system-ui, -apple-system, "Segoe UI", sans-serif';
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText(PEC.t(spec.title) + '  (' + ser.label + ' [' + ser.unit + '])', L, 18);
+    ctx.fillText(PEC.t(spec.title) + '  (' + ser.label + ' [' + yu + '])', L, 18);
 
     // Grid + ticks
     ctx.font = font;
@@ -70,7 +70,7 @@
       ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, T + ph); ctx.stroke();
       ctx.fillText(PEC.fmt(v, 3), x, T + ph + 6);
     });
-    ctx.fillText(spec.x.label + ' [' + spec.x.unit + ']', L + pw / 2, T + ph + 22);
+    ctx.fillText(spec.x.label + ' [' + xu + ']', L + pw / 2, T + ph + 22);
 
     // Zero line
     if (ymin < 0 && ymax > 0) {
