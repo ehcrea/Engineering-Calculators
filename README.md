@@ -41,6 +41,10 @@ load and the matching results at each moment.
 The **?** icon next to each calculator's title explains the theory: how it works, the key design
 insights and the assumptions behind the formulas (hover on desktop, tap on touch screens).
 
+The site is available in **English, German, Dutch and Turkish**. Pick a language in the header; the
+choice is remembered in the browser. It covers the whole interface, calculator labels and results,
+warnings, sketches, the theory notes and the PDF report.
+
 Each calculator links to its source article and lists the formulas it uses. Stress results are checked
 against a fatigue (dynamic) or yield (static) limit with an optional safety factor, as JPE recommends.
 
@@ -77,6 +81,13 @@ Calculators are plain objects registered with `PEC.register({...})` in `js/calcu
 
 Unit conversion, the form, saving and the PDF are handled for you. Add a theory note to `js/theory.js`,
 optionally a sketch to `js/preview.js`, and a check to `tests/run-tests.js`.
+
+## Translations
+
+English is the source language. Texts are written in English in the code, and `js/i18n/de.js`,
+`nl.js` and `tr.js` map each English text to its translation (`PEC.t(text, vars)` looks it up and
+falls back to English). `npm test` lists any text that has no translation, so when you add or change
+a label, warning, theory note or sketch text, add the same English key to each language file.
 
 ## Notes on interpretation
 

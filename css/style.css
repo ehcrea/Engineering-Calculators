@@ -65,6 +65,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn.small { padding: 3px 8px; font-size: 13px; }
 .btn.danger { color: var(--bad); }
 .toolbar { display: flex; flex-wrap: wrap; gap: 6px; }
+select.btn.lang-select { padding-right: 6px; appearance: auto; }
 
 /* Layout */
 .layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 53px); }

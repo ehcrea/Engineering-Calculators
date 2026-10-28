@@ -52,7 +52,7 @@
     ctx.fillStyle = c.fg;
     ctx.font = '600 13px system-ui, -apple-system, "Segoe UI", sans-serif';
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText(spec.title + '  (' + ser.label + ' [' + ser.unit + '])', L, 18);
+    ctx.fillText(PEC.t(spec.title) + '  (' + ser.label + ' [' + ser.unit + '])', L, 18);
 
     // Grid + ticks
     ctx.font = font;
