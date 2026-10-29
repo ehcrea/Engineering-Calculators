@@ -46,6 +46,7 @@ module.exports = function collect(PEC, ROOT) {
   // Calculator definitions and everything they produce for each select option.
   PEC.list.forEach(function (def) {
     add(def.title); add(def.category); add(def.description);
+    (def.corrections || []).forEach(function (c) { add(c.text); });
     def.inputs.forEach(function (inp) {
       add(inp.label); add(inp.hint);
       (inp.options || []).forEach(function (o) { add(o.label); });
@@ -64,7 +65,10 @@ module.exports = function collect(PEC, ROOT) {
     var th = PEC.THEORY[def.id];
     if (th) { add(th.intro); th.points.forEach(add); th.assumptions.forEach(add); }
   });
-  PEC.MATERIALS.forEach(function (m) { add(m.name); add(m.sfNote); });
+  PEC.MATERIALS.forEach(function (m) {
+    add(m.name); add(m.sfNote);
+    Object.keys(m.notes).forEach(function (k) { add(m.notes[k].text); });
+  });
   Object.keys(PEC.sections.SHAPES).forEach(function (k) { add(PEC.sections.SHAPES[k]); });
   return Object.keys(keys);
 };

@@ -150,6 +150,13 @@ table.results tr.bad td.val { color: var(--bad); }
 .formulas { margin-top: 18px; }
 .formulas ul { margin: 0; padding-left: 18px; font-family: var(--mono); font-size: 12.5px; line-height: 1.7; }
 .disclaimer { margin-top: 18px; font-size: 12px; color: var(--muted); }
+.corrections { margin-top: 18px; }
+.corrections ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.6; }
+.corrections li + li { margin-top: 6px; }
+.corrections h4 { margin: 14px 0 6px; font-size: 13px; }
+.corrections .cite { color: var(--muted); white-space: nowrap; }
+.corrections .refs { margin: 0; padding-left: 22px; font-size: 12px; line-height: 1.55; color: var(--muted); }
+.mat-note { font-size: 10px; margin-left: 2px; cursor: help; }
 
 /* Theory help next to the calculator title */
 .title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }

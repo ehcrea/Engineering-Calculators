@@ -46,5 +46,32 @@
     if (sigma > sa) res.warnings.push('Maximum stress exceeds the allowable stress.');
   }
 
-  PEC.common = { materialInputs: materialInputs, allowable: allowable, stressCheck: stressCheck };
+  // Literature cited where a calculator deliberately differs from the JPE article (def.corrections[].refs).
+  var REFERENCES = {
+    timoshenko: 'S. P. Timoshenko, J. M. Gere, Mechanics of Materials, 4th ed., PWS Publishing, 1997, §9.11 (shear deformation of beams).',
+    cowper: 'G. R. Cowper, "The shear coefficient in Timoshenko\'s beam theory", Journal of Applied Mechanics 33 (1966) 335–340.',
+    roark: 'W. C. Young, R. G. Budynas, Roark\'s Formulas for Stress and Strain, 7th ed., McGraw-Hill, 2002, §8.10 (shear deflection).',
+    johnson: 'K. L. Johnson, Contact Mechanics, Cambridge University Press, 1985, §4.2 (elliptical Hertz contact).',
+    hamrock: 'B. J. Hamrock, D. E. Brewe, "Simplified solution for stresses and deformations", Journal of Lubrication Technology 105 (1983) 171–177.',
+    wittrick: 'W. H. Wittrick, "The properties of crossed flexure pivots, and the influence of the point at which the strips cross", Aeronautical Quarterly 2 (1951) 272–292.',
+    haringx: 'J. A. Haringx, "The cross-spring pivot as a constructional element", Applied Scientific Research A1 (1949) 313–332.',
+    ptfe: 'Professional Plastics, Typical Properties of PTFE (unfilled PTFE, ASTM D696: 7.5·10⁻⁵ in/in·°F = 135 µm/m·K).',
+    c51000: 'Wieland Concast, C51000 Phosphor Bronze product data sheet (thermal conductivity 69.2 W/m·K at 20 °C).',
+    soemers: 'H. Soemers, Design Principles for Precision Mechanisms, T-Pointprint, Enschede, 2010, ch. 5 (leaf springs and cross-spring pivots).'
+  };
+
+  // Numbers the references of a list of notes [{text, refs}] in order of first use.
+  // Returns {items: [{text, nums}], refs: [citation]}.
+  function citations(notes) {
+    var keys = [], items = (notes || []).map(function (c) {
+      return { text: c.text, nums: (c.refs || []).map(function (k) {
+        if (keys.indexOf(k) < 0) keys.push(k);
+        return keys.indexOf(k) + 1;
+      }) };
+    });
+    return { items: items, refs: keys.map(function (k) { return REFERENCES[k]; }) };
+  }
+
+  PEC.common = { materialInputs: materialInputs, allowable: allowable, stressCheck: stressCheck, citations: citations };
+  PEC.REFERENCES = REFERENCES;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -3,6 +3,7 @@
  * Where JPE lists a range, the lower bound is used for strength and the midpoint for E/α/λ.
  * Poisson's ratio (nu) is NOT in the JPE table; typical handbook values are used.
  * Fatigue values marked "est." are estimated by JPE as σ0.2 / 3.
+ * NOTES lists where a value is corrected against the literature or looks inconsistent in the JPE table.
  */
 (function (root) {
   'use strict';
@@ -25,10 +26,10 @@
     ['Nickel', 196, 8880, 59, 317, 19, 'est.', 12.7, 460, 92, 0.31],
     ['PA-6.6 (Nylon)', 1.8, 1130, 55, 55, 18, 'est.', 85, 1700, 0.2, 0.39],
     ['PEEK', 3.7, 1300, 90, 90, 30, 'est.', 45, 2200, 0.25, 0.40],
-    ['Phosphor bronze', 117, 8890, 76, 276, 114, '5·10⁸ cycles', 17.8, 380, 208, 0.34],
+    ['Phosphor bronze', 117, 8890, 76, 276, 114, '5·10⁸ cycles', 17.8, 380, 69, 0.34],
     ['POM (Delrin)', 4.5, 1420, 65, 65, 21, 'est.', 120, 3100, 0.29, 0.35],
     ['PP Polypropylene', 1.4, 900, 20, 20, 11, '10⁷ cycles', 180, 1870, 0.15, 0.42],
-    ['PTFE (Teflon)', 0.5, 2170, 23, 31.5, 7, 'est.', 13, 1400, 0.124, 0.46],
+    ['PTFE (Teflon)', 0.5, 2170, 23, 31.5, 7, 'est.', 135, 1400, 0.124, 0.46],
     ['Quartz (crystal)', 80, 2300, 72, 72, 24, 'est.', 10, 710, 10, 0.17],
     ['Silicon', 130, 2329, 195, 195, 65, 'est.', 2.6, 713, 115, 0.28],
     ['Silicon carbide', 410, 3200, 200, 390, 66, 'est.', 4.6, 670, 110, 0.14],
@@ -50,6 +51,19 @@
       alpha: m[7], c: m[8], lambda: m[9], nu: m[10]
     };
   });
+
+  // Material → property → note. corrected: the value differs from JPE (refs in PEC.REFERENCES);
+  // otherwise the JPE value is kept but flagged as questionable.
+  var NOTES = {
+    'PTFE (Teflon)': { alpha: { corrected: true, text: 'JPE lists α = 13 µm/m·K; unfilled PTFE expands about ten times more.', refs: ['ptfe'] } },
+    'Phosphor bronze': {
+      lambda: { corrected: true, text: 'JPE lists λ = 208 W/m·K; phosphor bronze (C51000) conducts about 69 W/m·K.', refs: ['c51000'] },
+      sf: { text: 'JPE fatigue strength (114 MPa) is above its yield strength (76 MPa, annealed); spring tempers have a much higher yield strength.' }
+    },
+    'Steel (spring)': { sy: { text: 'JPE yield strength (669 MPa) is above its ultimate strength (550 MPa). Check the supplier data for your spring steel.' } },
+    'Tungsten carbide': { sy: { text: 'JPE yield strength (600 MPa) is above its ultimate strength (344 MPa). Tungsten carbide is brittle and has no yield point; use the supplier\'s transverse rupture strength.' } }
+  };
+  MATERIALS.forEach(function (m) { m.notes = NOTES[m.name] || {}; });
 
   root.PEC = root.PEC || {};
   root.PEC.MATERIALS = MATERIALS;

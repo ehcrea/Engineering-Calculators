@@ -18,6 +18,9 @@
     category: 'Flexures',
     source: BASE + 'flexure-engineering-fundamental-leaf-spring/',
     description: 'Stiffness in all six directions, stress and stroke of a straight leaf spring in S-shape (guided end) or C-shape (free end) deformation.',
+    corrections: [
+      { text: 'C_y differs from the JPE article. JPE uses bending only (E·t·b³/L³). In the width direction b is often comparable to L, so shear deformation adds a compliance of 12(1+ν)·L/(5·E·b·t) (Timoshenko beam, shear coefficient κ = 5/6). For a 20 mm long, 10 mm wide spring this lowers C_y to about 56 % of the JPE value. Both values are shown.', refs: ['timoshenko', 'cowper', 'roark'] }
+    ],
     inputs: [
       { type: 'heading', label: 'Geometry' },
       { id: 'shape', label: 'Deformation shape', type: 'select', value: 'S', options: [
@@ -38,7 +41,8 @@
       var S = v.shape === 'S';
       return [
         S ? 'Cₓ = E·b·t³ / L³' : 'Cₓ = E·b·t³ / (4L³)',
-        S ? 'C_y = E·t·b³ / L³ (Rₓ fixed),  E·t·b³ / (4L³) (Rₓ free)' : 'C_y = E·t·b³ / (4L³)',
+        S && v.Rx === 'fixed' ? 'C_y = 1 / (L³/(E·t·b³) + 12(1+ν)·L/(5·E·b·t))  (bending + shear, κ = 5/6)' : 'C_y = 1 / (4L³/(E·t·b³) + 12(1+ν)·L/(5·E·b·t))  (bending + shear, κ = 5/6)',
+        S && v.Rx === 'fixed' ? 'C_y,JPE = E·t·b³ / L³  (bending only)' : 'C_y,JPE = E·t·b³ / (4L³)  (bending only)',
         'C_z = E·A / L  (uₓ = 0)',
         S ? 'C_z = 700·E·A·I / (L·(700·I + uₓ²·A))  (uₓ ≠ 0)' : null,
         'Kₓ = E·t·b³ / (12L),  K_y = E·b·t³ / (12L)',
@@ -53,7 +57,9 @@
       var S = i.shape === 'S';
       var E = i.E, L = i.L, b = i.b, t = i.t, A = b * t, I = b * t * t * t / 12;
       var Cx = S ? E * b * Math.pow(t, 3) / Math.pow(L, 3) : E * b * Math.pow(t, 3) / (4 * Math.pow(L, 3));
-      var Cy = (S && i.Rx === 'fixed') ? E * t * Math.pow(b, 3) / Math.pow(L, 3) : E * t * Math.pow(b, 3) / (4 * Math.pow(L, 3));
+      // Width direction: b is often not small compared with L, so shear deformation is added (Timoshenko, κ = 5/6).
+      var CyJPE = (S && i.Rx === 'fixed') ? E * t * Math.pow(b, 3) / Math.pow(L, 3) : E * t * Math.pow(b, 3) / (4 * Math.pow(L, 3));
+      var Cy = 1 / (1 / CyJPE + 12 * (1 + i.nu) * L / (5 * E * b * t));
       var Cz0 = E * A / L;
       var Kx = E * t * Math.pow(b, 3) / (12 * L), Ky = E * b * Math.pow(t, 3) / (12 * L), Kz = E * b * Math.pow(t, 3) / (6 * (1 + i.nu) * L);
       var Fx = Cx * i.ux;
@@ -65,7 +71,8 @@
       res.results.push(
         h('Stiffness'),
         r('Stiffness in x (compliant)', 'Cₓ', Cx, 'N/mm'),
-        r('Stiffness in y (width direction)', 'C_y', Cy, 'N/µm'),
+        r('Stiffness in y (width direction, incl. shear)', 'C_y', Cy, 'N/µm'),
+        r('Stiffness in y, JPE formula (bending only)', 'C_y,JPE', CyJPE, 'N/µm'),
         r('Axial stiffness at uₓ = 0', 'C_z', Cz0, 'N/µm')
       );
       if (S) res.results.push(r('Axial stiffness at uₓ', 'C_z(uₓ)', 700 * E * A * I / (L * (700 * I + i.ux * i.ux * A)), 'N/µm'));
@@ -86,6 +93,7 @@
         r('Euler buckling load', 'F_b', bk.Fb, 'N')
       );
       if (L / t < 10) res.warnings.push('L/t < 10: slender beam theory becomes inaccurate.');
+      if (b / L > 0.2) res.warnings.push('b/L > 0.2: shear lowers C_y noticeably below the JPE (bending only) value.');
       if (i.ux > uxMax) res.warnings.push('Deflection exceeds the stroke allowed by the stress limit.');
       return res;
     }
@@ -165,6 +173,9 @@
     category: 'Flexures',
     source: BASE + 'flexure-engineering-fundamental-folded-leaf-spring/',
     description: 'Displacement, stiffness and stress of an L-shaped (folded) leaf spring loaded at its free end by a force at angle θ.',
+    corrections: [
+      { text: 'C_z differs from the JPE article. The shear term uses the shear coefficient κ = 5/6 for a rectangular section, where JPE uses the full area (κ = 1), which understates the shear compliance by about 17 %. As in JPE, C_z only holds when the end cannot rotate (for example three folded springs in a tangential arrangement) and torsion of leg 1 is neglected. With a truly free end, an out-of-plane force twists leg 1 and the stiffness is much lower.', refs: ['timoshenko', 'cowper'] }
+    ],
     inputs: [
       { type: 'heading', label: 'Geometry' },
       { id: 'L1', label: 'Length of leg 1 (vertical)', sym: 'L₁', unit: 'mm', value: 20 },
@@ -185,7 +196,7 @@
       'M_vert(y) = Fₓ·L₁ − F_y·L₂ − Fₓ·y,  M_hor(x) = F_y·L₂ − F_y·x',
       'σ_max = |M_max|·(t/2) / I',
       'Guided end, L₁ = L₂ = L: C = (15/2)·E·I/L³,  C(θ) = C·(1 + (3/5)·sin 2θ)',
-      'C_z = E·t·b³ / ((L₁+L₂)³ + 2b²(L₁+L₂)(1+ν))'
+      'C_z = E·t·b³ / ((L₁+L₂)³ + (12/5)·b²(L₁+L₂)(1+ν))  (guided end, κ = 5/6, torsion of leg 1 neglected)'
     ],
     compute: function (i) {
       var E = i.E, I = i.b * Math.pow(i.t, 3) / 12, L1 = i.L1, L2 = i.L2;
@@ -198,7 +209,8 @@
       var Mmax = Math.max(Math.abs(Fx * L1 - Fy * L2), Math.abs(Fy * L2));
       var sigma = Mmax * (i.t / 2) / I;
       var Lt = L1 + L2;
-      var Cz = E * i.t * Math.pow(i.b, 3) / (Math.pow(Lt, 3) + 2 * i.b * i.b * Lt * (1 + i.nu));
+      // Bending + shear of both legs as one plate, shear coefficient κ = 5/6 (JPE uses the full area).
+      var Cz = E * i.t * Math.pow(i.b, 3) / (Math.pow(Lt, 3) + 2.4 * i.b * i.b * Lt * (1 + i.nu));
       var res = { results: [], warnings: [] };
       res.results.push(
         h('Displacement of the free end'),
@@ -210,7 +222,7 @@
         h('Stiffness'),
         r('Absolute stiffness (bidirectional)', 'C_abs', i.F / dabs, 'N/mm'),
         r('Projected stiffness (unidirectional)', 'C_proj', i.F / Math.abs(dproj), 'N/mm'),
-        r('Stiffness out of plane (stiff direction)', 'C_z', Cz, 'N/µm')
+        r('Stiffness out of plane, guided end (stiff direction)', 'C_z', Cz, 'N/µm')
       );
       if (Math.abs(L1 - L2) < 1e-12) {
         var Cg = 7.5 * E * I / Math.pow(L1, 3);
@@ -308,6 +320,10 @@
     category: 'Flexures',
     source: BASE + 'cross-spring-pivot/',
     description: 'Rotational stiffness, buckling load, rolling radius and maximum angle of a cross spring pivot with the pole at a·L.',
+    corrections: [
+      { text: 'Stress and maximum angle for the chosen pole position are added; JPE gives them only for the reference a = 0.5. A leaf rotating about a pole at a·L carries end moments (4 − 6a)·E·I·θ/L and (6a − 2)·E·I·θ/L, so the stress is n = max(|4 − 6a|, |6a − 2|) times the reference stress (n = 3.24 at a = 0.5 ± √5/6, which JPE rounds to 3.3).', refs: ['wittrick', 'soemers'] },
+      { text: 'JPE writes F_b,ref = 8π²·E·I/L² = π²·E·b·t³/(3L²), but with I = b·t³/12 the two expressions differ by a factor 2. The calculator keeps 8π²·E·I/L², two leaves each buckling with both ends clamped (4π²·E·I/L² per leaf); JPE\'s second expression equals a single leaf.', refs: ['haringx', 'timoshenko'] }
+    ],
     inputs: [
       { type: 'heading', label: 'Geometry (per leaf spring)' },
       { id: 'L', label: 'Leaf spring length', sym: 'L', unit: 'mm', value: 20 },
@@ -322,8 +338,10 @@
       'I = w·t³/12 (single leaf spring)',
       'K_z = 8·(1 − 3a + 3a²)·E·I / L',
       'K_ref = 2·E·I / L = E·w·t³ / (6L)  (a = 0.5)',
-      'F_b,ref = 8·π²·E·I / L²',
+      'F_b,ref = 8·π²·E·I / L² = 2π²·E·w·t³ / (3L²)',
       'θ_ref = 2·σ_max·L / (E·t)',
+      'n = max(|4 − 6a|, |6a − 2|)  (end moment of a leaf relative to a = 0.5)',
+      'σ = n·E·t·θ / (2L),  θ_max = θ_ref / n',
       'ρ/L = −(√2/30)·(36·(a − 0.5)² − 5)  (equivalent rolling radius)',
       'Classical double symmetric (a = 0.5, total width w): K = 0.5·K_ref, F_b = 0.5·F_b,ref, θ_max = θ_ref',
       'Special classical, a = 0.5 ± √5/6 (ρ = 0): K = 2.67·K_ref, F_b = 0.5·F_b,ref, θ_max = θ_ref/3.3',
@@ -337,12 +355,17 @@
       var sa = PEC.common.allowable(i);
       var thRef = 2 * sa * L / (E * i.t);
       var sigmaRef = i.theta * E * i.t / (2 * L);
+      // A leaf rotating about a pole at a·L carries end moments (4 − 6a) and (6a − 2) times E·I·θ/L.
+      var n = Math.max(Math.abs(4 - 6 * a), Math.abs(6 * a - 2));
       var res = { results: [], warnings: [] };
       res.results.push(
         h('Pivot with pole at a·L'),
         r('Rotational stiffness', 'K_z', K, 'Nm/rad'),
         r('Torque at θ', 'M', K * i.theta, 'Nmm'),
         r('Equivalent rolling radius', 'ρ', -Math.SQRT2 / 30 * (36 * Math.pow(a - 0.5, 2) - 5) * L, 'mm'),
+        r('End moment factor', 'n', n, '-'),
+        r('Maximum stress at θ', 'σ', n * sigmaRef, 'MPa'),
+        r('Maximum angle at allowable stress', 'θ_max', thRef / n, 'mrad'),
         h('Reference (non-crossing, a = 0.5)'),
         r('Reference stiffness', 'K_ref', Kref, 'Nm/rad'),
         r('Reference buckling load (radial)', 'F_b,ref', Fb, 'N'),
@@ -361,7 +384,7 @@
         r('Buckling load', 'F_b', Fb, 'N'),
         r('Maximum angle', 'θ_max', thRef / 4, 'mrad')
       );
-      if (sigmaRef > sa) res.warnings.push('Stress at θ (reference geometry) exceeds the allowable stress.');
+      if (n * sigmaRef > sa) res.warnings.push('Stress at θ exceeds the allowable stress.');
       return res;
     }
   });

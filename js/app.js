@@ -182,7 +182,8 @@
       '</div><div id="preview" role="img" aria-label="' + esc(t('Geometry sketch: {name}', { name: t(def.title) })) + '" aria-describedby="previewNotes"></div><p class="preview-caption" id="previewCaption" hidden></p><p class="preview-notes" id="previewNotes"></p></div>' +
       '<div class="card"><h3>' + esc(t('Results')) + '</h3><div id="warnings"></div><table class="results"><tbody id="results"></tbody></table><div class="charts" id="charts"></div></div>' +
       '<div class="card formulas"><h3>' + esc(t('Formulas')) + '</h3><ul id="formulas"></ul>' +
-      '<p class="disclaimer">' + t('Formulas from the free {link} resource. This is an independent tool, not affiliated with JPE. Check results before relying on them for critical designs.', { link: '<a href="https://www.jpe-innovations.com/precision-point/" target="_blank" rel="noopener">JPE Precision Point</a>' }) + '</p></div></div>' +
+      '<p class="disclaimer">' + t('Formulas from the free {link} resource. This is an independent tool, not affiliated with JPE. Check results before relying on them for critical designs.', { link: '<a href="https://www.jpe-innovations.com/precision-point/" target="_blank" rel="noopener">JPE Precision Point</a>' }) + '</p></div>' +
+      correctionsHtml(PEC.common.citations(def.corrections), t('Differences from the JPE article')) + '</div>' +
       '</div>';
 
     stopAnim(true);
@@ -205,6 +206,14 @@
     };
     updateLoaded();
     recompute();
+  }
+
+  // Card listing where a calculation deliberately differs from JPE, with numbered literature references.
+  function correctionsHtml(c, title, intro) {
+    if (!c.items.length) return '';
+    return '<div class="card corrections"><h3>' + esc(title) + '</h3>' + (intro ? '<p>' + esc(intro) + '</p>' : '') + '<ul>' +
+      c.items.map(function (it) { return '<li>' + esc(it.raw ? it.text : t(it.text)) + (it.nums.length ? ' <span class="cite">[' + it.nums.join(', ') + ']</span>' : '') + '</li>'; }).join('') +
+      '</ul>' + (c.refs.length ? '<h4>' + esc(t('References')) + '</h4><ol class="refs">' + c.refs.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ol>' : '') + '</div>';
   }
 
   function updateLoaded() {
@@ -557,6 +566,7 @@
       notes: v._notes || '',
       inputs: inputs, results: results, warnings: res.warnings.map(function (w) { return t(w); }), charts: charts,
       formulas: (typeof def.formulas === 'function' ? def.formulas(v) : (def.formulas || [])).map(function (f) { return t(f); }),
+      corrections: PEC.common.citations(def.corrections),
       source: def.source
     }, fileBase() + '.pdf'); }).then(function () {
       toast(t('PDF downloaded'));
@@ -574,14 +584,27 @@
     renderNav($('#search').value);
     history.replaceState(null, '', '#/' + MATERIALS_VIEW);
     var cell = function (v, unit) { return v === null ? '–' : U.du(unit) === unit ? v : PEC.fmt(U.toDisplay(v, unit), 3); };
+    // Notes on corrected (†) or questionable (?) JPE values, numbered in table order.
+    var notes = [];
+    PEC.MATERIALS.forEach(function (m) {
+      Object.keys(m.notes).forEach(function (k) { notes.push({ m: m.name, k: k, text: m.notes[k].text, refs: m.notes[k].refs, corrected: m.notes[k].corrected }); });
+    });
+    var cite = PEC.common.citations(notes);
+    var mark = function (m, k) {
+      for (var n = 0; n < notes.length; n++) {
+        if (notes[n].m === m.name && notes[n].k === k) return ' <sup class="mat-note" title="' + esc(t(notes[n].text)) + '">' + (notes[n].corrected ? '†' : '?') + (n + 1) + '</sup>';
+      }
+      return '';
+    };
     var head = function (sym, unit) { return '<th>' + sym + ' [' + esc(U.du(unit)) + ']</th>'; };
     var rows = PEC.MATERIALS.map(function (m) {
-      return '<tr><td>' + esc(t(m.name)) + '</td><td>' + cell(m.E, 'GPa') + '</td><td>' + cell(m.rho, 'kg/m³') + '</td><td>' + cell(m.sy, 'MPa') + '</td><td>' + cell(m.su, 'MPa') + '</td><td>' + cell(m.sf, 'MPa') + ' <small>(' + esc(t(m.sfNote)) + ')</small></td><td>' + cell(m.alpha, 'µm/m·K') + '</td><td>' + cell(m.c, 'J/kg·K') + '</td><td>' + cell(m.lambda, 'W/m·K') + '</td><td>' + m.nu + '</td></tr>';
+      return '<tr><td>' + esc(t(m.name)) + '</td><td>' + cell(m.E, 'GPa') + '</td><td>' + cell(m.rho, 'kg/m³') + '</td><td>' + cell(m.sy, 'MPa') + mark(m, 'sy') + '</td><td>' + cell(m.su, 'MPa') + '</td><td>' + cell(m.sf, 'MPa') + ' <small>(' + esc(t(m.sfNote)) + ')</small>' + mark(m, 'sf') + '</td><td>' + cell(m.alpha, 'µm/m·K') + mark(m, 'alpha') + '</td><td>' + cell(m.c, 'J/kg·K') + '</td><td>' + cell(m.lambda, 'W/m·K') + mark(m, 'lambda') + '</td><td>' + m.nu + '</td></tr>';
     }).join('');
     $('#main').innerHTML = '<div class="calc-head"><h2>' + esc(t('Material properties')) + '</h2>' +
       '<p>' + esc(t('Used as presets in the calculators. Where JPE gives a range, the lower bound is used for strength and the midpoint for stiffness and thermal values. Poisson\'s ratio is not part of the JPE table; typical handbook values are shown.')) + '</p>' +
       '<div class="meta">' + esc(t('Source:')) + ' <a href="https://www.jpe-innovations.com/precision-point/common-materials-selection-properties/" target="_blank" rel="noopener">JPE Precision Point – Common materials: Selection and properties</a></div></div>' +
-      '<div class="card table-wrap" style="margin-top:16px"><table class="materials"><thead><tr><th>' + esc(t('Material')) + '</th>' + head('E', 'GPa') + head('ρ', 'kg/m³') + head('σ₀.₂', 'MPa') + head('σ_max', 'MPa') + head('σ_fatigue', 'MPa') + head('α', 'µm/m·K') + head('c', 'J/kg·K') + head('λ', 'W/m·K') + '<th>ν (' + esc(t('typ.')) + ')</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      '<div class="card table-wrap" style="margin-top:16px"><table class="materials"><thead><tr><th>' + esc(t('Material')) + '</th>' + head('E', 'GPa') + head('ρ', 'kg/m³') + head('σ₀.₂', 'MPa') + head('σ_max', 'MPa') + head('σ_fatigue', 'MPa') + head('α', 'µm/m·K') + head('c', 'J/kg·K') + head('λ', 'W/m·K') + '<th>ν (' + esc(t('typ.')) + ')</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      correctionsHtml({ items: cite.items.map(function (it, n) { return { text: (notes[n].corrected ? '† ' : '? ') + (n + 1) + ' ' + t(notes[n].m) + ': ' + t(it.text), nums: it.nums, raw: true }; }), refs: cite.refs }, t('Differences from the JPE table'), t('† corrected from the literature, ? JPE value kept but questionable.'));
   }
 
   // ------------------------------------------------------------------ Language

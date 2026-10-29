@@ -7,8 +7,38 @@
   var BASE = 'https://www.jpe-innovations.com/precision-point/';
 
   // ---------------------------------------------------------------- Hertz contact
-  // Ellipticity corrections f2/f3 follow from the simplified Brewe & Hamrock (1977) elliptic-contact
-  // approximations, normalised so that f2 = f3 = 1 for circular contact (the JPE base equations).
+  // Ellipticity corrections f2/f3 follow from the exact elliptic-contact solution (Johnson 1985, §4.2),
+  // normalised so that f2 = f3 = 1 for circular contact (the JPE base equations).
+
+  // Complete elliptic integrals K(m), E(m) of parameter m = e² by the arithmetic-geometric mean.
+  function ellipticKE(m) {
+    var a = 1, b = Math.sqrt(1 - m), c2sum = m / 2, p = 1;
+    for (var n = 0; n < 40 && Math.abs(a - b) > 1e-15 * a; n++) {
+      var c = (a - b) / 2, an = (a + b) / 2;
+      b = Math.sqrt(a * b); a = an; p *= 2;
+      c2sum += p * c * c / 2;
+    }
+    var K = Math.PI / (2 * a);
+    return { K: K, E: K * (1 - c2sum) };
+  }
+
+  // Ellipse aspect ratio k = a/b ≥ 1 for a curvature ratio eps = r_y'/r_x' ≥ 1, with K(e), E(e).
+  function ellipse(eps) {
+    function curvRatio(k) {
+      var m = 1 - 1 / (k * k), ke = ellipticKE(m);
+      return { r: (ke.E / (1 - m) - ke.K) / (ke.K - ke.E), K: ke.K, E: ke.E };
+    }
+    if (eps <= 1 + 1e-9) return { k: 1, K: Math.PI / 2, E: Math.PI / 2 };
+    var lo = 1 + 1e-9, hi = 2 * Math.pow(eps, 2 / Math.PI) + 2;
+    while (curvRatio(hi).r < eps) hi *= 2;
+    for (var n = 0; n < 200 && hi - lo > 1e-12 * hi; n++) {
+      var mid = 0.5 * (lo + hi);
+      if (curvRatio(mid).r < eps) lo = mid; else hi = mid;
+    }
+    var k = 0.5 * (lo + hi), c = curvRatio(k);
+    return { k: k, K: c.K, E: c.E };
+  }
+
   function hertz(i) {
     var r1x = PEC.inf(i.r1x), r1y = PEC.inf(i.r1y), r2x = PEC.inf(i.r2x), r2y = PEC.inf(i.r2y);
     var P = 0.5 * (1 / r1x + 1 / r1y + 1 / r2x + 1 / r2y);
@@ -20,7 +50,7 @@
     if (!(P + Q > 0) || !(P - Q > 0) || !isFinite(ry)) { out.invalid = true; return out; }
     var Re = Math.sqrt(rx * ry), eps = ry / rx, F = i.F;
     var R = 1 / (1 / rx + 1 / ry);
-    var k = Math.pow(eps, 2 / PI), Ek = 1 + (PI / 2 - 1) / eps, Fk = PI / 2 + (PI / 2 - 1) * Math.log(eps);
+    var el = ellipse(eps), k = el.k, Ek = el.E, Fk = el.K;
     var semiA = Math.cbrt(6 * k * k * Ek * F * R / (PI * Er));
     var semiB = Math.cbrt(6 * Ek * F * R / (PI * k * Er));
     var delta = Fk * Math.cbrt(9 / (2 * Ek * R) * Math.pow(F / (PI * k * Er), 2));
@@ -36,6 +66,9 @@
     category: 'Contact & dynamics',
     source: BASE + 'hertz-contact-universal-point/',
     description: 'Approach, contact pressure, contact ellipse and stiffness for two curved bodies (sphere–plane, sphere–sphere, ball–groove, crossed cylinders…).',
+    corrections: [
+      { text: 'JPE reads the ellipticity factors f₂ and f₃ from a graph. The calculator computes them from the exact elliptical Hertz solution with complete elliptic integrals, which replaces the earlier Brewe–Hamrock curve fit (that fit underestimated the approach by up to 12 % near ε_rr = 800).', refs: ['johnson', 'hamrock'] }
+    ],
     inputs: [
       { type: 'heading', label: 'Body 1 radii (+ convex, − concave, 0 = flat)' },
       { id: 'r1x', label: 'Smallest radius', sym: 'r₁ₓ', unit: 'mm', value: 5 },
@@ -61,7 +94,7 @@
       'δ = ∛(9F² / (4E_r²·R_e))·f₂',
       'σ_max = ∛(3F·E_r² / (2π³·R_e²))·f₃',
       'C_avg = F/δ,  C_local = dF/dδ = 3/(2f₂)·∛(F·4E_r²·R_e/9)',
-      'f₂, f₃ from Brewe & Hamrock elliptic approximations (f₂ = f₃ = 1 for circular contact)',
+      'f₂, f₃ from the exact elliptic-integral solution (f₂ = f₃ = 1 for circular contact)',
       'Valid for ε_rr < 800; above that use line-contact equations'
     ],
     compute: function (i) {
@@ -329,4 +362,5 @@
 
   PEC.motionProfile = motionProfile;
   PEC.hertz = hertz;
+  PEC.ellipticKE = ellipticKE;
 })(typeof window !== 'undefined' ? window : globalThis);
