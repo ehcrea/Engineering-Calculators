@@ -27,7 +27,7 @@
   }
 
   // report: {title, subtitle, source, project, notes, date, inputs:[{label,sym,value,unit}|{heading}],
-  //          results:[...same...], warnings:[], formulas:[], charts:[{dataUrl, w, h}]}
+  //          results:[...same...], warnings:[], formulas:[], corrections:{items, refs}, charts:[{dataUrl, w, h}]}
   function build(report) {
     var jsPDF = root.jspdf.jsPDF;
     var doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -118,6 +118,31 @@
         ensure(l.length * 4);
         doc.text(l, M + 2, y); y += l.length * 4;
       });
+      y += 3;
+    }
+
+    var corr = report.corrections;
+    if (corr && corr.items.length) {
+      ensure(14);
+      doc.setFont('DejaVu', 'bold'); doc.setFontSize(10); doc.setTextColor(20, 24, 31);
+      doc.text(t('Differences from the JPE article'), M, y); y += 5;
+      doc.setFont('DejaVu', 'normal'); doc.setFontSize(8.5); doc.setTextColor(50, 56, 66);
+      corr.items.forEach(function (it) {
+        var l = doc.splitTextToSize('• ' + t(it.text) + (it.nums.length ? ' [' + it.nums.join(', ') + ']' : ''), W - 2 * M - 4);
+        ensure(l.length * 4);
+        doc.text(l, M + 2, y); y += l.length * 4 + 1;
+      });
+      if (corr.refs.length) {
+        y += 2; ensure(10);
+        doc.setFont('DejaVu', 'bold'); doc.setFontSize(9);
+        doc.text(t('References'), M, y); y += 4.5;
+        doc.setFont('DejaVu', 'normal'); doc.setFontSize(7.5);
+        corr.refs.forEach(function (ref, n) {
+          var l = doc.splitTextToSize('[' + (n + 1) + '] ' + ref, W - 2 * M - 4);
+          ensure(l.length * 3.6);
+          doc.text(l, M + 2, y); y += l.length * 3.6;
+        });
+      }
       y += 3;
     }
 

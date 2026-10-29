@@ -78,6 +78,30 @@ close(result('hertz-contact', { r1x: 5, r1y: 0, r2x: 5, r2y: 0, theta: 90, F: 10
 var f2 = result('hertz-contact', { r1x: 5, r1y: 5, r2x: -5.2, r2y: 30, F: 100 }, 'f₂');
 ok(f2 > 0 && f2 < 1, 'elliptical f2 in (0,1): ' + f2);
 
+// Elliptic integrals (tabulated): K(0.5) = 1.8540747, E(0.5) = 1.3506439.
+close(PEC.ellipticKE(0.5).K, 1.8540746773, 1e-9, 'K(m=0.5)');
+close(PEC.ellipticKE(0.5).E, 1.3506438810, 1e-9, 'E(m=0.5)');
+// Exact elliptical Hertz contact is self-consistent with Johnson (1985): δ = p₀·b·K(e)/E*, b/a = √(1 − e²).
+(function () {
+  var def = PEC.get('hertz-contact');
+  [[5, 5, -5.2, 30], [5, 50, 0, 0], [2, 400, 0, 0]].forEach(function (g) {
+    var v = Object.assign(PEC.defaults(def), { r1x: g[0], r1y: g[1], r2x: g[2], r2y: g[3], F: 100 });
+    var o = PEC.hertz(PEC.inputsToSI(def, v));
+    var m = 1 - Math.pow(o.semiB / o.semiA, 2), ke = PEC.ellipticKE(m);
+    close(o.delta, o.pmax * o.semiB * ke.K / (o.Er / 2), 1e-6, 'Johnson approach check eps=' + o.eps.toFixed(1));
+    close(Math.PI * o.semiA * o.semiB * o.pmax * 2 / 3, 100, 1e-9, 'pressure integrates to F, eps=' + o.eps.toFixed(1));
+  });
+})();
+
+// Leaf spring C_y includes shear (κ = 5/6): 1/C = L³/(E t b³) + 12(1+ν)L/(5 E b t).
+close(result('leaf-spring', { shape: 'S', Rx: 'fixed', E: 210, nu: 0.3, b: 10, t: 0.3, L: 20 }, 'C_y'),
+  1 / (Math.pow(0.02, 3) / (210e9 * 3e-4 * 1e-6) + 12 * 1.3 * 0.02 / (5 * 210e9 * 0.01 * 3e-4)), 1e-9, 'leaf Cy with shear');
+close(result('leaf-spring', { shape: 'S', Rx: 'fixed', E: 210, b: 10, t: 0.3, L: 20 }, 'C_y,JPE'), 210e9 * 3e-4 * 1e-6 / Math.pow(0.02, 3), 1e-9, 'leaf Cy JPE');
+// Cross pivot: end moment factor n = max(|4 − 6a|, |6a − 2|); n = 1 at a = 0.5, 3.24 at a = 0.5 + √5/6.
+close(result('cross-spring-pivot', { a: 0.5 }, 'n'), 1, 1e-12, 'pivot n at a=0.5');
+close(result('cross-spring-pivot', { a: 0.5 + Math.sqrt(5) / 6 }, 'n'), 1 + Math.sqrt(5), 1e-12, 'pivot n special');
+close(result('cross-spring-pivot', { a: 0 }, 'θ_max'), result('cross-spring-pivot', { a: 0 }, 'θ_ref') / 4, 1e-12, 'pivot max angle a=0');
+
 // Impact: F = v0 √(m c)
 close(result('impact-force', { m: 0.5, v0: 100, C1: 10, C2: 0 }, 'F'), 0.1 * Math.sqrt(0.5 * 1e7), 1e-9, 'impact force');
 close(result('impact-force', { m: 0.5, v0: 100, C1: 10, C2: 10 }, 'c'), 5e6, 1e-9, 'impact series stiffness');
