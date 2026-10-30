@@ -112,3 +112,10 @@ from their public resource for convenience. Verify results before using them in 
 
 - [jsPDF](https://github.com/parallax/jsPDF) 2.5.2 and [jsPDF-AutoTable](https://github.com/simonbengtsson/jsPDF-AutoTable) 3.8.4 (MIT), vendored in `vendor/`
 - [DejaVu Sans](https://dejavu-fonts.github.io/) (subset, free license) for Unicode symbols in PDFs
+
+## About and license
+
+The **About** page (sidebar → Reference → About) describes the app and links to the author's site,
+[ehcrea.com](https://ehcrea.com).
+
+Released under the [MIT License](LICENSE) © 2026 Eren ([ehcrea](https://ehcrea.com)).

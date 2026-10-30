@@ -719,6 +719,15 @@
     "JPE fatigue strength (114 MPa) is above its yield strength (76 MPa, annealed); spring tempers have a much higher yield strength.": "JPE yorulma dayanımı (114 MPa) akma dayanımının (76 MPa, tavlanmış) üzerindedir; yay sertliğindeki durumların akma dayanımı çok daha yüksektir.",
     "JPE lists α = 13 µm/m·K; unfilled PTFE expands about ten times more.": "JPE α = 13 µm/m·K verir; dolgusuz PTFE yaklaşık on kat daha fazla genleşir.",
     "JPE yield strength (669 MPa) is above its ultimate strength (550 MPa). Check the supplier data for your spring steel.": "JPE akma dayanımı (669 MPa) çekme dayanımının (550 MPa) üzerindedir. Yay çeliğiniz için tedarikçi verilerini kontrol edin.",
-    "JPE yield strength (600 MPa) is above its ultimate strength (344 MPa). Tungsten carbide is brittle and has no yield point; use the supplier's transverse rupture strength.": "JPE akma dayanımı (600 MPa) çekme dayanımının (344 MPa) üzerindedir. Tungsten karbür gevrektir ve akma noktası yoktur; tedarikçinin eğilme kırılma dayanımını kullanın."
+    "JPE yield strength (600 MPa) is above its ultimate strength (344 MPa). Tungsten carbide is brittle and has no yield point; use the supplier's transverse rupture strength.": "JPE akma dayanımı (600 MPa) çekme dayanımının (344 MPa) üzerindedir. Tungsten karbür gevrektir ve akma noktası yoktur; tedarikçinin eğilme kırılma dayanımını kullanın.",
+    "About": "Hakkında",
+    "Author": "Yazar",
+    "License": "Lisans",
+    "Disclaimer": "Sorumluluk reddi",
+    "Read the license": "Lisansı okuyun",
+    "Source code on GitHub": "GitHub'da kaynak kodu",
+    "Precision Engineering Calculators is a free set of web calculators for precision mechanical design: flexures, beams, contact, dynamics and thermal effects. It is built on the formulas of the free JPE Precision Point articles and runs entirely in your browser; your calculations are stored only on your own device.": "Precision Engineering Calculators, hassas mekanik tasarım için ücretsiz web hesaplayıcılarından oluşan bir settir: esnek mafsallar, kirişler, temas, dinamik ve ısıl etkiler. Ücretsiz JPE Precision Point makalelerindeki formüllere dayanır ve tamamen tarayıcınızda çalışır; hesaplamalarınız yalnızca kendi cihazınızda saklanır.",
+    "Open source under the MIT License: you may use, copy, modify and share it freely, as long as the copyright and license notice are kept.": "MIT Lisansı altında açık kaynaktır: telif hakkı ve lisans bildirimi korunduğu sürece serbestçe kullanabilir, kopyalayabilir, değiştirebilir ve paylaşabilirsiniz.",
+    "This is an independent tool and is not affiliated with or endorsed by JPE. Verify results before using them in critical designs.": "Bu, JPE ile bağlantılı olmayan ve JPE tarafından onaylanmamış bağımsız bir araçtır. Sonuçları kritik tasarımlarda kullanmadan önce doğrulayın."
   });
 })(typeof window !== 'undefined' ? window : globalThis);
