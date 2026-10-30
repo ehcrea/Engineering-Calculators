@@ -719,6 +719,15 @@
     "JPE fatigue strength (114 MPa) is above its yield strength (76 MPa, annealed); spring tempers have a much higher yield strength.": "Die JPE-Dauerfestigkeit (114 MPa) liegt über der Streckgrenze (76 MPa, weichgeglüht); federharte Zustände haben eine viel höhere Streckgrenze.",
     "JPE lists α = 13 µm/m·K; unfilled PTFE expands about ten times more.": "JPE gibt α = 13 µm/m·K an; ungefülltes PTFE dehnt sich etwa zehnmal stärker aus.",
     "JPE yield strength (669 MPa) is above its ultimate strength (550 MPa). Check the supplier data for your spring steel.": "Die JPE-Streckgrenze (669 MPa) liegt über der Zugfestigkeit (550 MPa). Prüfen Sie die Herstellerdaten Ihres Federstahls.",
-    "JPE yield strength (600 MPa) is above its ultimate strength (344 MPa). Tungsten carbide is brittle and has no yield point; use the supplier's transverse rupture strength.": "Die JPE-Streckgrenze (600 MPa) liegt über der Zugfestigkeit (344 MPa). Wolframkarbid ist spröde und hat keine Streckgrenze; verwenden Sie die Biegebruchfestigkeit des Herstellers."
+    "JPE yield strength (600 MPa) is above its ultimate strength (344 MPa). Tungsten carbide is brittle and has no yield point; use the supplier's transverse rupture strength.": "Die JPE-Streckgrenze (600 MPa) liegt über der Zugfestigkeit (344 MPa). Wolframkarbid ist spröde und hat keine Streckgrenze; verwenden Sie die Biegebruchfestigkeit des Herstellers.",
+    "About": "Über",
+    "Author": "Autor",
+    "License": "Lizenz",
+    "Disclaimer": "Haftungsausschluss",
+    "Read the license": "Lizenz lesen",
+    "Source code on GitHub": "Quellcode auf GitHub",
+    "Precision Engineering Calculators is a free set of web calculators for precision mechanical design: flexures, beams, contact, dynamics and thermal effects. It is built on the formulas of the free JPE Precision Point articles and runs entirely in your browser; your calculations are stored only on your own device.": "Precision Engineering Calculators ist eine kostenlose Sammlung von Web-Rechnern für die Präzisionskonstruktion: Festkörpergelenke, Balken, Kontakt, Dynamik und thermische Effekte. Sie beruht auf den Formeln der frei verfügbaren JPE-Precision-Point-Artikel und läuft vollständig im Browser; Ihre Berechnungen werden nur auf Ihrem eigenen Gerät gespeichert.",
+    "Open source under the MIT License: you may use, copy, modify and share it freely, as long as the copyright and license notice are kept.": "Open Source unter der MIT-Lizenz: Sie dürfen die Software frei nutzen, kopieren, ändern und weitergeben, solange der Urheberrechts- und Lizenzhinweis erhalten bleibt.",
+    "This is an independent tool and is not affiliated with or endorsed by JPE. Verify results before using them in critical designs.": "Dies ist ein unabhängiges Werkzeug, das nicht mit JPE verbunden ist und nicht von JPE unterstützt wird. Prüfen Sie die Ergebnisse, bevor Sie sie in kritischen Konstruktionen verwenden."
   });
 })(typeof window !== 'undefined' ? window : globalThis);

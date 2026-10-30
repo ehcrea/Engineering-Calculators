@@ -9,7 +9,8 @@
 
   // Units of the properties in PEC.MATERIALS.
   var MAT_UNITS = { E: 'GPa', nu: '-', sy: 'MPa', sf: 'MPa', su: 'MPa', rho: 'kg/m³', alpha: 'µm/m·K' };
-  var MATERIALS_VIEW = 'materials';
+  var MATERIALS_VIEW = 'materials', ABOUT_VIEW = 'about';
+  var AUTHOR_URL = 'https://ehcrea.com', REPO_URL = 'https://github.com/ehcrea/Engineering-Calculators';
 
   var state = { def: null, values: null, snapshotId: null, snapshotName: null, lastResult: null, anim: null };
 
@@ -38,15 +39,19 @@
       if (f && [d.title, d.category, d.description, t(d.title), t(d.category), t(d.description)].join(' ').toLowerCase().indexOf(f) < 0) return;
       (groups[d.category] = groups[d.category] || []).push(d);
     });
-    var cur = state.def ? state.def.id : (location.hash === '#/' + MATERIALS_VIEW ? MATERIALS_VIEW : '');
+    var cur = state.def ? state.def.id : [MATERIALS_VIEW, ABOUT_VIEW].filter(function (v) { return location.hash === '#/' + v; })[0] || '';
+    var navItem = function (id, title) {
+      return '<button class="nav-item' + (id === cur ? ' active" aria-current="page' : '') + '" data-calc="' + id + '">' + esc(title) + '</button>';
+    };
     var html = Object.keys(groups).map(function (g) {
       return '<div class="nav-group"><h2>' + esc(t(g)) + '</h2>' + groups[g].map(function (d) {
         return '<button class="nav-item' + (d.id === cur ? ' active" aria-current="page' : '') + '" data-calc="' + d.id + '">' + esc(t(d.title)) + '</button>';
       }).join('') + '</div>';
     }).join('');
-    if (!f || ['materials properties reference', t('Reference'), t('Material properties')].join(' ').toLowerCase().indexOf(f) >= 0) {
-      html += '<div class="nav-group"><h2>' + esc(t('Reference')) + '</h2><button class="nav-item' + (cur === MATERIALS_VIEW ? ' active" aria-current="page' : '') + '" data-calc="' + MATERIALS_VIEW + '">' + esc(t('Material properties')) + '</button></div>';
-    }
+    var ref = '';
+    if (!f || ['materials properties reference', t('Reference'), t('Material properties')].join(' ').toLowerCase().indexOf(f) >= 0) ref += navItem(MATERIALS_VIEW, t('Material properties'));
+    if (!f || ['about license author', t('About')].join(' ').toLowerCase().indexOf(f) >= 0) ref += navItem(ABOUT_VIEW, t('About'));
+    if (ref) html += '<div class="nav-group"><h2>' + esc(t('Reference')) + '</h2>' + ref + '</div>';
     $('#nav').innerHTML = html || '<p class="empty">' + esc(t('No calculator matches.')) + '</p>';
   }
 
@@ -141,6 +146,7 @@
   // ------------------------------------------------------------------ Calculator page
   function openCalc(id, values, meta) {
     if (id === MATERIALS_VIEW) return openMaterials();
+    if (id === ABOUT_VIEW) return openAbout();
     var def = PEC.get(id) || PEC.list[0];
     state.def = def;
     var base = PEC.defaults(def);
@@ -607,6 +613,24 @@
       correctionsHtml({ items: cite.items.map(function (it, n) { return { text: (notes[n].corrected ? '† ' : '? ') + (n + 1) + ' ' + t(notes[n].m) + ': ' + t(it.text), nums: it.nums, raw: true }; }), refs: cite.refs }, t('Differences from the JPE table'), t('† corrected from the literature, ? JPE value kept but questionable.'));
   }
 
+  // ------------------------------------------------------------------ About
+  function openAbout() {
+    stopAnim(true);
+    state.def = null;
+    store.setLastCalc(ABOUT_VIEW);
+    document.body.classList.remove('nav-open');
+    history.replaceState(null, '', '#/' + ABOUT_VIEW);
+    renderNav($('#search').value);
+    var link = function (href, text) { return '<a href="' + href + '" target="_blank" rel="noopener">' + esc(text) + '</a>'; };
+    $('#main').innerHTML = '<div class="calc-head"><h2>' + esc(t('About')) + '</h2>' +
+      '<p>' + esc(t('Precision Engineering Calculators is a free set of web calculators for precision mechanical design: flexures, beams, contact, dynamics and thermal effects. It is built on the formulas of the free JPE Precision Point articles and runs entirely in your browser; your calculations are stored only on your own device.')) + '</p></div>' +
+      '<div class="card about" style="margin-top:16px">' +
+      '<h3>' + esc(t('Author')) + '</h3><p>Eren · ' + link(AUTHOR_URL, 'ehcrea.com') + '</p>' +
+      '<h3>' + esc(t('License')) + '</h3><p>' + esc(t('Open source under the MIT License: you may use, copy, modify and share it freely, as long as the copyright and license notice are kept.')) + ' ' + link(REPO_URL + '/blob/main/LICENSE', t('Read the license')) + ' · ' + link(REPO_URL, t('Source code on GitHub')) + '</p>' +
+      '<h3>' + esc(t('Disclaimer')) + '</h3><p>' + esc(t('This is an independent tool and is not affiliated with or endorsed by JPE. Verify results before using them in critical designs.')) + '</p>' +
+      '</div>';
+  }
+
   // ------------------------------------------------------------------ Language
   // Static texts in index.html carry their English source text in data-i18n* attributes.
   function applyStaticTexts() {
@@ -622,6 +646,8 @@
     if (state.def) {
       renderNav($('#search').value);
       renderCalc();
+    } else if (location.hash === '#/' + ABOUT_VIEW) {
+      openAbout();
     } else {
       openMaterials();
     }
@@ -669,6 +695,7 @@
   function routeFromHash() {
     var h = store.fromHash(location.hash);
     if (h && h.calc === MATERIALS_VIEW) { openMaterials(); return true; }
+    if (h && h.calc === ABOUT_VIEW) { openAbout(); return true; }
     if (h && PEC.get(h.calc)) {
       var hasValues = Object.keys(h.values).length > 0;
       openCalc(h.calc, hasValues ? Object.assign(PEC.defaults(PEC.get(h.calc)), h.values) : null);
@@ -685,6 +712,7 @@
       var b = e.target.closest('[data-calc]');
       if (!b) return;
       if (b.dataset.calc === MATERIALS_VIEW) { openMaterials(); return; }
+      if (b.dataset.calc === ABOUT_VIEW) { openAbout(); return; }
       openCalc(b.dataset.calc);
       history.replaceState(null, '', store.toHash(state.def.id, state.values));
     });
@@ -739,6 +767,7 @@
     if (!routeFromHash()) {
       var last = store.lastCalc();
       if (last === MATERIALS_VIEW) openMaterials();
+      else if (last === ABOUT_VIEW) openAbout();
       else openCalc(last && PEC.get(last) ? last : PEC.list[0].id);
     }
   }

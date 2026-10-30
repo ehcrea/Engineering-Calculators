@@ -719,6 +719,15 @@
     "JPE fatigue strength (114 MPa) is above its yield strength (76 MPa, annealed); spring tempers have a much higher yield strength.": "De JPE-vermoeiingssterkte (114 MPa) ligt boven de vloeigrens (76 MPa, gegloeid); verende hardheden hebben een veel hogere vloeigrens.",
     "JPE lists α = 13 µm/m·K; unfilled PTFE expands about ten times more.": "JPE geeft α = 13 µm/m·K; ongevuld PTFE zet ongeveer tien keer zoveel uit.",
     "JPE yield strength (669 MPa) is above its ultimate strength (550 MPa). Check the supplier data for your spring steel.": "De JPE-vloeigrens (669 MPa) ligt boven de treksterkte (550 MPa). Controleer de leveranciersgegevens van uw verenstaal.",
-    "JPE yield strength (600 MPa) is above its ultimate strength (344 MPa). Tungsten carbide is brittle and has no yield point; use the supplier's transverse rupture strength.": "De JPE-vloeigrens (600 MPa) ligt boven de treksterkte (344 MPa). Wolfraamcarbide is bros en heeft geen vloeigrens; gebruik de buigbreuksterkte van de leverancier."
+    "JPE yield strength (600 MPa) is above its ultimate strength (344 MPa). Tungsten carbide is brittle and has no yield point; use the supplier's transverse rupture strength.": "De JPE-vloeigrens (600 MPa) ligt boven de treksterkte (344 MPa). Wolfraamcarbide is bros en heeft geen vloeigrens; gebruik de buigbreuksterkte van de leverancier.",
+    "About": "Over",
+    "Author": "Auteur",
+    "License": "Licentie",
+    "Disclaimer": "Disclaimer",
+    "Read the license": "Licentie lezen",
+    "Source code on GitHub": "Broncode op GitHub",
+    "Precision Engineering Calculators is a free set of web calculators for precision mechanical design: flexures, beams, contact, dynamics and thermal effects. It is built on the formulas of the free JPE Precision Point articles and runs entirely in your browser; your calculations are stored only on your own device.": "Precision Engineering Calculators is een gratis verzameling webrekenmodules voor precisieconstructie: flexures, balken, contact, dynamica en thermische effecten. Ze is gebaseerd op de formules uit de vrij beschikbare JPE Precision Point-artikelen en draait volledig in uw browser; uw berekeningen worden alleen op uw eigen apparaat opgeslagen.",
+    "Open source under the MIT License: you may use, copy, modify and share it freely, as long as the copyright and license notice are kept.": "Open source onder de MIT-licentie: u mag de software vrij gebruiken, kopiëren, aanpassen en delen, zolang de auteursrechts- en licentievermelding behouden blijft.",
+    "This is an independent tool and is not affiliated with or endorsed by JPE. Verify results before using them in critical designs.": "Dit is een onafhankelijke tool die niet verbonden is aan of onderschreven wordt door JPE. Controleer de resultaten voordat u ze in kritische ontwerpen gebruikt."
   });
 })(typeof window !== 'undefined' ? window : globalThis);

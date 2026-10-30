@@ -115,6 +115,8 @@ main { padding: 20px 24px 48px; max-width: 1280px; min-width: 0; }
 .grid { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 18px; align-items: start; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; min-width: 0; }
 .card h3 { margin: 0 0 8px; font-size: 14px; }
+.about h3:not(:first-child) { margin-top: 16px; }
+.about p { margin: 0; max-width: 75ch; }
 
 /* Form */
 .form-section { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
