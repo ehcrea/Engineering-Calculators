@@ -11,6 +11,7 @@
   var LANGS = [
     { code: 'en', name: 'English', locale: 'en-GB' },
     { code: 'de', name: 'Deutsch', locale: 'de-DE' },
+    { code: 'es', name: 'Español', locale: 'es-ES' },
     { code: 'nl', name: 'Nederlands', locale: 'nl-NL' },
     { code: 'tr', name: 'Türkçe', locale: 'tr-TR' }
   ];
