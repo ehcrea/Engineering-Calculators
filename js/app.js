@@ -53,6 +53,8 @@
     if (!f || ['about license author', t('About')].join(' ').toLowerCase().indexOf(f) >= 0) ref += navItem(ABOUT_VIEW, t('About'));
     if (ref) html += '<div class="nav-group"><h2>' + esc(t('Reference')) + '</h2>' + ref + '</div>';
     $('#nav').innerHTML = html || '<p class="empty">' + esc(t('No calculator matches.')) + '</p>';
+    var about = $('#btnAbout');
+    if (about) { if (cur === ABOUT_VIEW) about.setAttribute('aria-current', 'page'); else about.removeAttribute('aria-current'); }
   }
 
   // ------------------------------------------------------------------ Form
@@ -748,6 +750,7 @@
     if (mobile.addEventListener) mobile.addEventListener('change', syncMenu);
     syncMenu();
     $('#btnLibrary').onclick = openLibrary;
+    $('#btnAbout').onclick = openAbout;
     $('#libClose').onclick = function () { $('#library').close(); };
     $('#libAll').onchange = renderLibrary;
     $('#libList').addEventListener('click', onLibraryClick);
