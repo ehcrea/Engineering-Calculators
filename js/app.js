@@ -628,9 +628,9 @@
       '<p>' + esc(t('Precision Engineering Calculators is a free set of web calculators for precision mechanical design: flexures, beams, contact, dynamics and thermal effects. It is built on the formulas of the free JPE Precision Point articles and runs entirely in your browser; your calculations are stored only on your own device.')) + '</p></div>' +
       '<div class="card about" style="margin-top:16px">' +
       '<h3>' + esc(t('Author')) + '</h3><p>Eren · ' + link(AUTHOR_URL, 'ehcrea.com') + '</p>' +
-      '<h3>' + esc(t('Support this project')) + '</h3><p>' + esc(t('These calculators are free, and I build and maintain them in my spare time. If they save you time or help your work, I would be very grateful for your support on Patreon. It helps me keep improving the tools and add new calculators. Thank you!')) + '</p>' +
-      '<p class="support"><a class="btn primary" href="' + PATREON_URL + '" target="_blank" rel="noopener">' + esc(t('Support me on Patreon')) + '</a></p>' +
       '<h3>' + esc(t('License')) + '</h3><p>' + esc(t('Open source under the MIT License: you may use, copy, modify and share it freely, as long as the copyright and license notice are kept.')) + ' ' + link(REPO_URL + '/blob/main/LICENSE', t('Read the license')) + ' · ' + link(REPO_URL, t('Source code on GitHub')) + '</p>' +
+      '<div class="about-support"><h3>' + esc(t('Support this project')) + '</h3><p>' + esc(t('These calculators are free, and I build and maintain them in my spare time. If they save you time or help your work, I would be very grateful for your support on Patreon. It helps me keep improving the tools and add new calculators. Thank you!')) + '</p>' +
+      '<a class="btn-support" href="' + PATREON_URL + '" target="_blank" rel="noopener"><span aria-hidden="true">♥</span> ' + esc(t('Support me on Patreon')) + '</a></div>' +
       '<h3>' + esc(t('Disclaimer')) + '</h3><p>' + esc(t('This is an independent tool and is not affiliated with or endorsed by JPE. Verify results before using them in critical designs.')) + '</p>' +
       '</div>';
   }
