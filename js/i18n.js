@@ -60,7 +60,9 @@
     return 'en-GB';
   }
 
-  if (root.localStorage) setLang(stored() || 'en', false);
+  // A language page (/de/, /nl/, …) always shows its own language.
+  var page = root.document && root.document.documentElement.dataset.page;
+  if (root.localStorage) setLang(supported(page) ? page : stored() || 'en', false);
 
   PEC.t = t;
   PEC.i18n = {

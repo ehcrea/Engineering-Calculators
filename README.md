@@ -119,3 +119,13 @@ The **About** page (sidebar → Reference → About) describes the app and links
 [ehcrea.com](https://ehcrea.com).
 
 Released under the [MIT License](LICENSE) © 2026 Eren ([ehcrea](https://ehcrea.com)).
+
+### Language pages and SEO
+
+Each language has its own page (`/`, `/de/`, `/nl/`, `/tr/`, `/es/`) so search engines can index the translations. `index.html` is the template. After changing it or the translations, regenerate the language pages, the SEO tags (title, description, canonical, hreflang, Open Graph, JSON-LD) and `sitemap.xml`:
+
+```bash
+node tools/build-pages.js
+```
+
+The page titles, descriptions and other settings are in `tools/seo.config.js`.

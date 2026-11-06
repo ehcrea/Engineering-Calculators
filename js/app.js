@@ -639,7 +639,6 @@
   // Static texts in index.html carry their English source text in data-i18n* attributes.
   function applyStaticTexts() {
     document.documentElement.lang = PEC.i18n.lang();
-    document.title = t('Precision Engineering Calculators');
     document.querySelectorAll('[data-i18n]').forEach(function (el) { el.textContent = t(el.dataset.i18n); });
     [['data-i18n-title', 'title'], ['data-i18n-placeholder', 'placeholder'], ['data-i18n-aria-label', 'aria-label']].forEach(function (p) {
       document.querySelectorAll('[' + p[0] + ']').forEach(function (el) { el.setAttribute(p[1], t(el.getAttribute(p[0]))); });
@@ -691,7 +690,16 @@
     }
     options();
     if (narrow.addEventListener) narrow.addEventListener('change', options);
-    sel.onchange = function () { setLanguage(sel.value); };
+    sel.onchange = function () {
+      // Each language has its own page (/, /de/, /nl/, …); keep the calculator in the hash.
+      var page = document.documentElement.dataset.page;
+      if (page && sel.value !== page) {
+        PEC.i18n.setLang(sel.value);
+        location.href = (page === 'en' ? '' : '../') + (sel.value === 'en' ? '' : sel.value + '/') + location.hash;
+        return;
+      }
+      setLanguage(sel.value);
+    };
     applyStaticTexts();
   }
 
