@@ -118,7 +118,7 @@ from their public resource for convenience. Verify results before using them in 
 The **About** page (sidebar → Reference → About) describes the app and links to the author's site,
 [ehcrea.com](https://ehcrea.com).
 
-Released under the [MIT License](LICENSE) © 2026 Eren ([ehcrea](https://ehcrea.com)).
+Released under the [MIT License](LICENSE) © 2026 E. Tozlu ([ehcrea](https://ehcrea.com)).
 
 ### Language pages and SEO
 
