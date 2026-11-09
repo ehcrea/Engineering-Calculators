@@ -11,6 +11,9 @@
   var MAT_UNITS = { E: 'GPa', nu: '-', sy: 'MPa', sf: 'MPa', su: 'MPa', rho: 'kg/m³', alpha: 'µm/m·K' };
   var MATERIALS_VIEW = 'materials', ABOUT_VIEW = 'about';
   var AUTHOR_URL = 'https://ehcrea.com', PATREON_URL = 'https://www.patreon.com/ehcrea', REPO_URL = 'https://github.com/ehcrea/Engineering-Calculators';
+  var INSTAGRAM_URL = 'https://www.instagram.com/ehcrea.studio', FACEBOOK_URL = 'https://www.facebook.com/ehcrea.studio';
+  var INSTAGRAM_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="currentColor"/></svg>';
+  var FACEBOOK_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.5-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.8 1.4-3.8 3.9v2.3H7.9v3h2.6V21h3z"/></svg>';
 
   var state = { def: null, values: null, snapshotId: null, snapshotName: null, lastResult: null, anim: null };
 
@@ -628,6 +631,9 @@
       '<p>' + esc(t('Precision Engineering Calculators is a free set of web calculators for precision mechanical design: flexures, beams, contact, dynamics and thermal effects. It is built on the formulas of the free JPE Precision Point articles and runs entirely in your browser; your calculations are stored only on your own device.')) + '</p></div>' +
       '<div class="card about" style="margin-top:16px">' +
       '<h3>' + esc(t('Author')) + '</h3><p>Eren · ' + link(AUTHOR_URL, 'ehcrea.com') + '</p>' +
+      '<h3>' + esc(t('Follow ehcrea.studio')) + '</h3><p class="about-social">' +
+      '<a class="social-link" href="' + INSTAGRAM_URL + '" target="_blank" rel="noopener" aria-label="' + esc(t('ehcrea.studio on Instagram (opens in a new tab)')) + '">' + INSTAGRAM_ICON + '<span>Instagram</span></a>' +
+      '<a class="social-link" href="' + FACEBOOK_URL + '" target="_blank" rel="noopener" aria-label="' + esc(t('ehcrea.studio on Facebook (opens in a new tab)')) + '">' + FACEBOOK_ICON + '<span>Facebook</span></a></p>' +
       '<h3>' + esc(t('License')) + '</h3><p>' + esc(t('Open source under the MIT License: you may use, copy, modify and share it freely, as long as the copyright and license notice are kept.')) + ' ' + link(REPO_URL + '/blob/main/LICENSE', t('Read the license')) + ' · ' + link(REPO_URL, t('Source code on GitHub')) + '</p>' +
       '<div class="about-support"><h3>' + esc(t('Support this project')) + '</h3><p>' + esc(t('These calculators are free, and I build and maintain them in my spare time. If they save you time or help your work, I would be very grateful for your support on Patreon. It helps me keep improving the tools and add new calculators. Thank you!')) + '</p>' +
       '<a class="btn-support" href="' + PATREON_URL + '" target="_blank" rel="noopener"><span aria-hidden="true">♥</span> ' + esc(t('Support me on Patreon')) + '</a></div>' +
