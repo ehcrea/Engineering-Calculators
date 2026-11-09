@@ -630,7 +630,7 @@
     $('#main').innerHTML = '<div class="calc-head"><h2>' + esc(t('About')) + '</h2>' +
       '<p>' + esc(t('Precision Engineering Calculators is a free set of web calculators for precision mechanical design: flexures, beams, contact, dynamics and thermal effects. It is built on the formulas of the free JPE Precision Point articles and runs entirely in your browser; your calculations are stored only on your own device.')) + '</p></div>' +
       '<div class="card about" style="margin-top:16px">' +
-      '<h3>' + esc(t('Author')) + '</h3><p>Eren · ' + link(AUTHOR_URL, 'ehcrea.com') + '</p>' +
+      '<h3>' + esc(t('Author')) + '</h3><p>E. Tozlu · ' + link(AUTHOR_URL, 'ehcrea.com') + '</p>' +
       '<h3>' + esc(t('Follow ehcrea.studio')) + '</h3><p class="about-social">' +
       '<a class="social-link" href="' + INSTAGRAM_URL + '" target="_blank" rel="noopener" aria-label="' + esc(t('ehcrea.studio on Instagram (opens in a new tab)')) + '">' + INSTAGRAM_ICON + '<span>Instagram</span></a>' +
       '<a class="social-link" href="' + FACEBOOK_URL + '" target="_blank" rel="noopener" aria-label="' + esc(t('ehcrea.studio on Facebook (opens in a new tab)')) + '">' + FACEBOOK_ICON + '<span>Facebook</span></a></p>' +
