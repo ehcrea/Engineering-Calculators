@@ -693,6 +693,190 @@
     return { svg: s.toString(), notes: notes };
   }
 
+  // ---------------------------------------------------------------- mass moment of inertia
+  function inertiaPreview(i, res, c) {
+    var s = Sketch(440, 280, c), notes = [], sh = i.shape, zStart = 30;
+    var cx = 200, cy = 150, ax = c.accent, ox = 0.45 * Math.cos(PI / 6), oy = -0.45 * Math.sin(PI / 6);
+    var axis = function (x1, y1, x2, y2, lab) {
+      s.line(x1, y1, x2, y2, { stroke: ax, 'stroke-width': 1, 'stroke-dasharray': '6 3 1 3' });
+      s.arrow(x2 - (x2 - x1) * 0.001, y2 - (y2 - y1) * 0.001, x2, y2, { 'stroke-width': 1.5 });
+      s.text(x2 + (x2 - x1 > 0 ? 10 : x2 - x1 < 0 ? -10 : 0), y2 + (y2 - y1 > 0 ? 10 : y2 - y1 < 0 ? -10 : 0), lab, { fill: ax, 'font-style': 'italic' });
+    };
+    var zx0, zx1, half;
+    if (sh === 'cyl' || sh === 'tube') {
+      var k = Math.min(260 / i.L, 150 / i.D), Lp = i.L * k, R = i.D * k / 2, e = R * 0.35;
+      zx0 = cx - Lp / 2; zx1 = cx + Lp / 2; half = R;
+      s.path('M' + n(zx0) + ' ' + n(cy - R) + 'H' + n(zx1) + 'A' + n(e) + ' ' + n(R) + ' 0 0 1 ' + n(zx1) + ' ' + n(cy + R) + 'H' + n(zx0) + 'A' + n(e) + ' ' + n(R) + ' 0 0 1 ' + n(zx0) + ' ' + n(cy - R) + 'z', { fill: c.fill });
+      s.add('<ellipse' + attrs({ cx: n(zx0), cy: n(cy), rx: n(e), ry: n(R), fill: c.fill2, stroke: c.fg, 'stroke-width': 1.5 }) + '/>');
+      if (sh === 'tube' && i.di > 0) s.add('<ellipse' + attrs({ cx: n(zx0), cy: n(cy), rx: n(e * i.di / i.D), ry: n(R * i.di / i.D), fill: c.bg, stroke: c.fg, 'stroke-width': 1.2 }) + '/>');
+      s.dim(zx0, cy + R, zx1, cy + R, 'L = ' + mm(i.L), 22);
+      s.dim(zx0 - e, cy + R, zx0 - e, cy - R, 'D = ' + mm(i.D), -18);
+      zStart = e + 4;
+      if (sh === 'tube') s.text(zx0, cy - R - 14, 'd = ' + mm(i.di), { fill: c.muted, 'font-size': 11 });
+    } else if (sh === 'block') {
+      var kb = Math.min(230 / (i.L + ox * i.w), 140 / (i.hh + 0.25 * i.w)), Lb = i.L * kb, Hb = i.hh * kb, dx = i.w * kb * ox, dy = i.w * kb * oy;
+      var x0 = cx - Lb / 2 - dx / 2, y0 = cy - Hb / 2 - dy / 2;
+      s.path('M' + n(x0) + ' ' + n(y0) + 'l' + n(dx) + ' ' + n(dy) + 'h' + n(Lb) + 'l' + n(-dx) + ' ' + n(-dy) + 'z', { fill: c.fill2 });
+      s.path('M' + n(x0 + Lb) + ' ' + n(y0) + 'l' + n(dx) + ' ' + n(dy) + 'v' + n(Hb) + 'l' + n(-dx) + ' ' + n(-dy) + 'z', { fill: c.fill2 });
+      s.rect(x0, y0, Lb, Hb);
+      zx0 = x0; zx1 = x0 + Lb + dx; half = Hb / 2;
+      s.dim(x0, y0 + Hb, x0 + Lb, y0 + Hb, 'L = ' + mm(i.L), 22);
+      s.dim(x0, y0, x0, y0 + Hb, 'h = ' + mm(i.hh), 16);
+      s.dim(x0 + Lb, y0 + Hb, x0 + Lb + dx, y0 + Hb + dy, 'w = ' + mm(i.w), -8, { labelAt: [x0 + Lb + dx + 34, y0 + Hb + dy / 2 + 8] });
+      notes.push('depth w foreshortened in the oblique view');
+      cx = x0 + Lb / 2 + dx / 2; cy = y0 + Hb / 2 + dy / 2;
+    } else {
+      var Rs = 75;
+      s.circle(cx, cy, Rs);
+      s.add('<ellipse' + attrs({ cx: cx, cy: cy, rx: Rs, ry: Rs * 0.3, fill: 'none', stroke: c.muted, 'stroke-width': 1, 'stroke-dasharray': '3 3' }) + '/>');
+      s.dim(cx - Rs, cy + Rs + 6, cx + Rs, cy + Rs + 6, 'D = ' + mm(i.D), 12);
+      zx0 = cx - Rs; zx1 = cx + Rs; half = Rs;
+    }
+    axis(zx0 - zStart, cy, zx1 + 40, cy, 'z');
+    axis(cx, cy + half + 10, cx, cy - half - 30, sh === 'block' ? 'y' : 'x');
+    axis(cx - 40 * ox / 0.45, cy - 40 * oy / 0.45, cx + 60 * ox / 0.45, cy + 60 * oy / 0.45, sh === 'block' ? 'x' : 'y');
+    s.circle(cx, cy, 3, { fill: ax, stroke: 'none' });
+    if (i.dp > 0) {
+      var yp = Math.max(cy - half - 40, 22);
+      s.line(zx0 - 30, yp, zx1 + 40, yp, { stroke: c.muted, 'stroke-width': 1, 'stroke-dasharray': '6 3 1 3' });
+      s.text(zx1 + 52, yp, "z'", { fill: c.muted, 'font-style': 'italic' });
+      s.dim(zx1 + 20, yp, zx1 + 20, cy, '', 0);
+      s.text(zx1 + 26, (yp + cy) / 2, 'd_p = ' + mm(i.dp), { fill: c.muted, 'font-size': 11, 'text-anchor': 'start' });
+      notes.push('parallel axis distance not to scale');
+    }
+    var m = resItem(res, 'm');
+    return { svg: s.toString(), notes: notes, caption: m ? resText(res, 'm') + ' · ' + resText(res, 'J_z') : '' };
+  }
+
+  // ---------------------------------------------------------------- kinematic coupling
+  function couplingPreview(i, res, c) {
+    var s = Sketch(480, 270, c), th = i.theta;
+    if (!(th > 0 && th < PI / 2)) return null;
+    // Top view: ball circle, three radial grooves at 90°, 210°, 330°.
+    var cx = 120, cy = 140, Rp = 80, rb = Math.min(Math.max(i.Db / i.Rc * Rp / 2, 6), 22);
+    s.text(cx, 22, T('top view'), { fill: c.muted, 'font-size': 11 });
+    s.circle(cx, cy, Rp, { fill: 'none', stroke: c.muted, 'stroke-width': 1, 'stroke-dasharray': '4 3' });
+    [90, 210, 330].forEach(function (deg) {
+      var a = -deg * PI / 180, ux = Math.cos(a), uy = Math.sin(a), px = -uy, py = ux, bx = cx + Rp * ux, by = cy + Rp * uy;
+      var g = rb * 0.75, l1 = Rp - 2.2 * rb, l2 = Rp + 2.2 * rb;
+      s.path('M' + n(cx + l1 * ux + g * px) + ' ' + n(cy + l1 * uy + g * py) + 'L' + n(cx + l2 * ux + g * px) + ' ' + n(cy + l2 * uy + g * py) +
+        'L' + n(cx + l2 * ux - g * px) + ' ' + n(cy + l2 * uy - g * py) + 'L' + n(cx + l1 * ux - g * px) + ' ' + n(cy + l1 * uy - g * py) + 'z', { fill: c.fill });
+      s.line(cx + l1 * ux, cy + l1 * uy, cx + l2 * ux, cy + l2 * uy, { stroke: c.muted, 'stroke-width': 0.8 });
+      s.circle(bx, by, rb, { fill: c.fill2 });
+    });
+    s.dim(cx, cy, cx + Rp * Math.cos(PI / 6), cy + Rp * Math.sin(PI / 6), 'R_c', 0, { labelAt: [cx + 34, cy + 6] });
+    s.circle(cx, cy, 2.5, { fill: c.fg, stroke: 'none' });
+    // Section through one ball in its V-groove.
+    var sx = 345, sy = 135, R = 48, ct = Math.cos(th), st = Math.sin(th);
+    s.text(sx, 22, T('section through one groove'), { fill: c.muted, 'font-size': 11 });
+    var pL = [sx - R * st, sy + R * ct], pR = [sx + R * st, sy + R * ct], tL = [-ct, -st], tR = [ct, -st], ext = 70;
+    var bottom = sy + R / ct;
+    s.path('M' + n(pL[0] + tL[0] * ext) + ' ' + n(pL[1] + tL[1] * ext) + 'L' + n(sx) + ' ' + n(bottom) + 'L' + n(pR[0] + tR[0] * ext) + ' ' + n(pR[1] + tR[1] * ext) +
+      'L' + n(pR[0] + tR[0] * ext) + ' ' + n(bottom + 30) + 'L' + n(pL[0] + tL[0] * ext) + ' ' + n(bottom + 30) + 'z', { fill: 'url(#' + s.id + 'h)' });
+    s.circle(sx, sy, R, { fill: c.fill2 });
+    s.line(sx, sy - R - 6, sx, bottom + 10, { stroke: c.muted, 'stroke-width': 0.8, 'stroke-dasharray': '4 3' });
+    [[pL, -1], [pR, 1]].forEach(function (q) {
+      var p = q[0], sg = q[1];
+      s.arrow(p[0] + sg * st * 34, p[1] + ct * 34, p[0], p[1]);
+      s.line(p[0], p[1], sx, sy, { stroke: c.muted, 'stroke-width': 0.8, 'stroke-dasharray': '2 3' });
+    });
+    s.text(pR[0] + st * 34 + 12, pR[1] + ct * 34 + 4, 'N', { fill: c.accent, 'font-style': 'italic' });
+    s.path('M' + n(sx) + ' ' + n(sy + 22) + 'A22 22 0 0 0 ' + n(sx + 22 * st) + ' ' + n(sy + 22 * ct), { stroke: c.accent, 'stroke-width': 1 });
+    s.text(sx + 12, sy + 34, 'θ', { fill: c.accent, 'font-size': 11 });
+    s.arrow(sx, sy - R - 40, sx, sy - R - 4);
+    s.text(sx + 26, sy - R - 30, 'F/3', { fill: c.accent, 'font-style': 'italic' });
+    s.dim(sx - R, sy, sx + R, sy, 'D_b = ' + mm(i.Db), 0, { labelAt: [sx, sy - 10] });
+    return { svg: s.toString(), notes: ['ball and groove enlarged in the top view'], caption: [resText(res, 'N'), resText(res, 'p_max')].filter(Boolean).join(' · ') };
+  }
+
+  // ---------------------------------------------------------------- bolt preload: joint section and torque split
+  var BOLT_DIMS = { M3: [3, 5.5, 4.57, 3.4], M4: [4, 7, 5.88, 4.5], M5: [5, 8.5, 6.88, 5.5], M6: [6, 10, 8.88, 6.6], M8: [8, 13, 11.63, 9],
+    M10: [10, 16, 14.63, 11], M12: [12, 18, 16.63, 13.5], M16: [16, 24, 22.49, 17.5], M20: [20, 30, 28.19, 22], M24: [24, 36, 33.61, 26] };
+  function boltTorquePreview(i, res, c) {
+    var b = BOLT_DIMS[i.size];
+    if (!b) return null;
+    var s = Sketch(460, 330, c), k = 64 / b[1], cx = 130, d = b[0] * k, dw = (i.head === 'hex' ? b[2] : b[1]) * k, dh = b[3] * k;
+    var top = 56, hk = (i.head === 'hex' ? 0.65 : 1) * d, t1 = 1.6 * d, t2 = 1.8 * d, W = 3.2 * b[1] * k;
+    // Clamped plate with clearance hole, threaded base below.
+    s.rect(cx - W / 2, top + hk, (W - dh) / 2, t1, { fill: c.fill });
+    s.rect(cx + dh / 2, top + hk, (W - dh) / 2, t1, { fill: c.fill });
+    s.rect(cx - W / 2, top + hk + t1, W, t2, { fill: 'url(#' + s.id + 'h)' });
+    // Bolt: head, shank, thread.
+    s.rect(cx - dw / 2, top, dw, hk, { fill: c.fill2 });
+    if (i.head !== 'hex') s.rect(cx - 0.25 * d, top, 0.5 * d, 0.5 * hk, { fill: c.bg });
+    s.rect(cx - d / 2, top + hk, d, t1 + 0.85 * t2, { fill: c.fill2 });
+    for (var y = top + hk + t1 + 4; y < top + hk + t1 + 0.85 * t2 - 2; y += 6) s.line(cx - d / 2, y, cx + d / 2, y + 3, { stroke: c.muted, 'stroke-width': 0.8 });
+    s.line(cx, top - 12, cx, top + hk + t1 + t2 + 10, { stroke: c.muted, 'stroke-width': 0.8, 'stroke-dasharray': '6 3 1 3' });
+    var dkm = resItem(res, 'D_Km'), Dk = dkm ? dkm.value * 1e3 * k : (dw + dh) / 2;
+    s.dim(cx - Dk / 2, top + hk, cx + Dk / 2, top + hk, 'D_Km = ' + mm(dkm ? dkm.value : 0), 0, { labelAt: [cx, top - 24] });
+    s.line(cx - Dk / 2, top + hk, cx - Dk / 2, top - 12, { stroke: c.accent, 'stroke-width': 0.8, 'stroke-dasharray': '2 2' });
+    s.line(cx + Dk / 2, top + hk, cx + Dk / 2, top - 12, { stroke: c.accent, 'stroke-width': 0.8, 'stroke-dasharray': '2 2' });
+    s.dim(cx - dh / 2, top + hk + t1 * 0.55, cx + dh / 2, top + hk + t1 * 0.55, '', 0);
+    s.text(cx + W / 2 + 8, top + hk + t1 * 0.55, 'd_h = ' + mm(b[3] * 1e-3), { fill: c.muted, 'font-size': 11, 'text-anchor': 'start' });
+    s.text(cx + W / 2 + 8, top + hk / 2, i.size + ' · ' + i.cls, { 'font-size': 12, 'font-weight': 600, 'text-anchor': 'start' });
+    var Fm = resItem(res, 'F_Mzul');
+    if (Fm) {
+      s.arrow(cx + W / 2 + 30, top + hk + t1 + 30, cx + W / 2 + 30, top + hk + t1 - 20);
+      s.text(cx + W / 2 + 40, top + hk + t1 + 6, 'F_M', { fill: c.accent, 'font-style': 'italic', 'text-anchor': 'start' });
+    }
+    // Torque split bar.
+    var parts = [['M_P', T('pitch')], ['M_G', T('thread friction')], ['M_K', T('head friction')]].map(function (p) { var r = resItem(res, p[0]); return [p[1], r ? r.value : 0]; });
+    var bx = 30, by = 270, bw = 400, x = bx, fills = [c.accent, c.fill2, c.fill];
+    s.text(bx, by - 12, T('Where the tightening torque goes'), { 'font-size': 11, 'font-weight': 600, 'text-anchor': 'start' });
+    parts.forEach(function (p, q) {
+      var w = bw * p[1];
+      s.rect(x, by, w, 16, { fill: fills[q], 'stroke-width': 1 });
+      s.rect(bx + q * 135, by + 28, 10, 10, { fill: fills[q], 'stroke-width': 1 });
+      s.text(bx + q * 135 + 16, by + 33, p[0] + ' ' + Math.round(p[1] * 100) + ' %', { 'font-size': 11, 'text-anchor': 'start' });
+      x += w;
+    });
+    return { svg: s.toString(), notes: ['plate and thread lengths schematic'] };
+  }
+
+  // ---------------------------------------------------------------- press fit: half-section and stress across the wall
+  function pressFitPreview(i, res, c) {
+    var DF = i.DF, Da = i.Da, Di = i.Di > 0 ? i.Di : 0;
+    if (!(Da > DF) || !(Di < DF)) return null;
+    var p = resItem(res, 'p');
+    var s = Sketch(480, 280, c), notes = [];
+    // Half-section above the axis: shaft (longer) and hub.
+    var k = Math.min(150 / (Da / 2), 170 / (i.L * 1.6)), ax = 210, x0 = 40, Lh = i.L * k, ls = Lh * 1.5;
+    var y = function (r) { return ax - r * k; };
+    s.line(x0 - 10, ax, x0 + ls + 10, ax, { stroke: c.muted, 'stroke-width': 0.8, 'stroke-dasharray': '8 3 2 3' });
+    s.rect(x0, y(DF / 2), ls, (DF - Di) / 2 * k, { fill: c.fill2 });
+    var hx = x0 + (ls - Lh) / 2;
+    s.rect(hx, y(Da / 2), Lh, (Da - DF) / 2 * k, { fill: c.fill });
+    s.text(x0 + 16, (y(DF / 2) + y(Di / 2)) / 2, T('shaft'), { 'font-size': 11, 'text-anchor': 'start' });
+    s.text(hx + Lh / 2, (y(Da / 2) + y(DF / 2)) / 2, T('hub'), { 'font-size': 11 });
+    s.dim(hx, y(Da / 2), hx + Lh, y(Da / 2), 'L_F = ' + mm(i.L), -12);
+    s.dim(x0 + ls + 12, ax, x0 + ls + 12, y(DF / 2), '', 0);
+    s.text(x0 + ls + 18, y(DF / 4), 'D_F/2', { fill: c.muted, 'font-size': 10, 'text-anchor': 'start' });
+    s.dim(hx - 14, ax, hx - 14, y(Da / 2), '', 0);
+    s.text(hx - 20, y(Da / 2) + 10, 'D_a/2', { fill: c.muted, 'font-size': 10, 'text-anchor': 'end' });
+    if (!p || !(p.value > 0)) return { svg: s.toString(), notes: notes };
+    // Lamé stresses through shaft and hub, plotted against the radius.
+    var P = p.value, a = Di / 2, b = DF / 2, cR = Da / 2, pts = { t: [], r: [] };
+    var shaft = function (r) { var f = P * b * b / (b * b - a * a); return a > 0 ? [-f * (1 + a * a / (r * r)), -f * (1 - a * a / (r * r))] : [-P, -P]; };
+    var hub = function (r) { var f = P * b * b / (cR * cR - b * b); return [f * (1 + cR * cR / (r * r)), f * (1 - cR * cR / (r * r))]; };
+    for (var q = 0; q <= 30; q++) { var r = a + (b - a) * q / 30, v = shaft(Math.max(r, 1e-12)); pts.t.push([r, v[0]]); pts.r.push([r, v[1]]); }
+    for (q = 0; q <= 30; q++) { r = b + (cR - b) * q / 30; v = hub(r); pts.t.push([r, v[0]]); pts.r.push([r, v[1]]); }
+    var all = pts.t.concat(pts.r).map(function (e) { return e[1]; }), vmax = Math.max.apply(null, all), vmin = Math.min.apply(null, all);
+    var gx = 300, gw = 160, gy0 = 40, gh = 200, sy = function (v) { return gy0 + (vmax - v) / (vmax - vmin) * gh; }, sx = function (r) { return gx + r / cR * gw; };
+    s.text(gx + gw / 2, 12, T('stress across the wall'), { fill: c.muted, 'font-size': 11 });
+    s.line(gx, sy(0), gx + gw, sy(0), { stroke: c.muted, 'stroke-width': 0.8 });
+    s.line(sx(b), gy0, sx(b), gy0 + gh, { stroke: c.muted, 'stroke-width': 0.8, 'stroke-dasharray': '3 3' });
+    var line = function (arr) { return polyline(arr.map(function (e) { return [sx(e[0]), sy(e[1])]; })); };
+    var split = function (arr) { return [arr.slice(0, 31), arr.slice(31)]; };
+    split(pts.t).forEach(function (seg) { s.path(line(seg), { stroke: c.accent, 'stroke-width': 2 }); });
+    split(pts.r).forEach(function (seg) { s.path(line(seg), { stroke: c.fg, 'stroke-width': 1.5, 'stroke-dasharray': '5 3' }); });
+    s.text(sx(b) + 6, sy(pts.t[31][1]) - 10, 'σ_t', { fill: c.accent, 'font-style': 'italic', 'text-anchor': 'start' });
+    s.text(gx + gw - 4, sy(0) + 14, 'σ_r', { 'font-style': 'italic', 'text-anchor': 'end' });
+    s.text(sx(b), gy0 + gh + 14, 'r = D_F/2', { fill: c.muted, 'font-size': 10 });
+    s.text(gx - 4, sy(vmax), qty(vmax, 'MPa'), { fill: c.muted, 'font-size': 10, 'text-anchor': 'end' });
+    s.text(gx - 4, sy(vmin), qty(vmin, 'MPa'), { fill: c.muted, 'font-size': 10, 'text-anchor': 'end' });
+    return { svg: s.toString(), notes: notes, caption: resText(res, 'p') };
+  }
+
   var PREVIEWS = {
     'leaf-spring': function (i, r, c, a) { return springPreview(i, r, c, false, a); },
     'rod-spring': function (i, r, c, a) { return springPreview(i, r, c, true, a); },
@@ -708,7 +892,11 @@
     'equivalent-stiffness': stiffnessPreview,
     'impact-force': impactPreview,
     'thermal-bolt-compensation': boltPreview,
-    'motion-profile': motionPreview
+    'motion-profile': motionPreview,
+    'mass-moment-of-inertia': inertiaPreview,
+    'kinematic-coupling': couplingPreview,
+    'bolt-preload': boltTorquePreview,
+    'press-fit': pressFitPreview
   };
   // Calculators whose sketch can be animated (render with an `anim` phase).
   var ANIMATED = ['leaf-spring', 'rod-spring', 'folded-leaf-spring', 'flexure-hinge', 'cross-spring-pivot', 'beam-bending',
