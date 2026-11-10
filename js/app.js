@@ -17,6 +17,30 @@
 
   var state = { def: null, values: null, snapshotId: null, snapshotName: null, lastResult: null, anim: null };
 
+  // Every calculator has its own page (leaf-spring/, de/leaf-spring/, …) so search engines can list it.
+  // The loaded page says where it sits: <html data-page="de" data-calc="leaf-spring">.
+  var PAGE_LANG = document.documentElement.dataset.page || '';
+  var PAGE_CALC = document.documentElement.dataset.calc || '';
+  var SITE_ROOT = (function () {
+    var up = (PAGE_LANG && PAGE_LANG !== 'en' ? 1 : 0) + (PAGE_CALC ? 1 : 0);
+    try { return new URL(new Array(up + 1).join('../'), location.href).href.split('#')[0]; } catch (e) { return ''; }
+  })();
+  var HOME_TITLE = document.title;
+
+  function langRoot(lang) { return SITE_ROOT + (lang === 'en' ? '' : lang + '/'); }
+  function pageUrl(calcId) { return langRoot(PAGE_LANG || 'en') + (calcId ? calcId + '/' : ''); }
+
+  // Put the view in the URL: the calculator's own page plus the inputs in the hash.
+  function setUrl(hash) {
+    if (!history.replaceState) return;
+    var path = PAGE_LANG && SITE_ROOT ? pageUrl(state.def ? state.def.id : '') : '';
+    try { history.replaceState(null, '', path + hash); } catch (e) { history.replaceState(null, '', hash); }
+  }
+
+  function setTitle(name) {
+    document.title = name ? name + ' | ' + t('Precision Engineering Calculators') : HOME_TITLE;
+  }
+
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
@@ -163,6 +187,7 @@
     document.body.classList.remove('nav-open');
     renderNav($('#search').value);
     renderCalc();
+    setTitle(t('{name} calculator', { name: t(def.title) }));
     root.scrollTo(0, 0);
   }
 
@@ -175,12 +200,15 @@
       '<span id="loadedName"></span></div></div>' +
       '<div class="calc-actions toolbar">' +
       '<button class="btn primary" id="btnSave">' + esc(t('Save')) + '</button>' +
-      '<button class="btn" id="btnSaveAs">' + esc(t('Save as…')) + '</button>' +
+      '<button class="btn secondary" id="btnSaveAs">' + esc(t('Save as…')) + '</button>' +
       '<button class="btn" id="btnPdf">' + esc(t('Export PDF')) + '</button>' +
+      '<button class="btn more-toggle" id="btnMore" type="button" aria-expanded="false" aria-controls="moreActions">' + esc(t('More…')) + '</button>' +
+      '<span class="more-actions secondary" id="moreActions">' +
       '<button class="btn" id="btnPrint">' + esc(t('Print')) + '</button>' +
       '<button class="btn" id="btnLink">' + esc(t('Copy link')) + '</button>' +
       '<button class="btn" id="btnJson">' + esc(t('Download JSON')) + '</button>' +
       '<button class="btn" id="btnReset">' + esc(t('Reset')) + '</button>' +
+      '</span>' +
       '</div>' +
       '<div class="grid">' +
       '<form class="card" id="form" autocomplete="off" onsubmit="return false">' + form +
@@ -203,6 +231,11 @@
     $('#form').addEventListener('input', onInput);
     $('#form').addEventListener('change', onInput);
     $('#btnSave').onclick = save;
+    $('#btnMore').onclick = function () {
+      var bar = $('.calc-actions'), open = !bar.classList.contains('open');
+      bar.classList.toggle('open', open);
+      this.setAttribute('aria-expanded', String(open));
+    };
     $('#btnSaveAs').onclick = function () { save(true); };
     $('#btnPdf').onclick = exportPdf;
     $('#btnPrint').onclick = function () { root.print(); };
@@ -241,7 +274,7 @@
     else if (e.type === 'input') detachMaterial(id);
     if (inp && inp.type === 'select') applyVisibility();
     store.saveCurrent(state.def.id, state.values);
-    if (history.replaceState) history.replaceState(null, '', store.toHash(state.def.id, state.values));
+    setUrl(store.toHash(state.def.id, state.values));
     recompute();
   }
 
@@ -470,7 +503,7 @@
       $('#library').close();
       openCalc(s.calc, Object.assign({}, s.values), s);
       store.saveCurrent(s.calc, state.values);
-      history.replaceState(null, '', store.toHash(s.calc, state.values));
+      setUrl(store.toHash(s.calc, state.values));
       toast(t('Opened "{name}"', { name: s.name }));
     } else if (b.dataset.export) {
       var x = find(b.dataset.export);
@@ -593,7 +626,8 @@
     store.setLastCalc(MATERIALS_VIEW);
     document.body.classList.remove('nav-open');
     renderNav($('#search').value);
-    history.replaceState(null, '', '#/' + MATERIALS_VIEW);
+    setUrl('#/' + MATERIALS_VIEW);
+    setTitle(t('Material properties'));
     var cell = function (v, unit) { return v === null ? '–' : U.du(unit) === unit ? v : PEC.fmt(U.toDisplay(v, unit), 3); };
     // Notes on corrected (†) or questionable (?) JPE values, numbered in table order.
     var notes = [];
@@ -624,7 +658,8 @@
     state.def = null;
     store.setLastCalc(ABOUT_VIEW);
     document.body.classList.remove('nav-open');
-    history.replaceState(null, '', '#/' + ABOUT_VIEW);
+    setUrl('#/' + ABOUT_VIEW);
+    setTitle(t('About'));
     renderNav($('#search').value);
     var link = function (href, text) { return '<a href="' + href + '" target="_blank" rel="noopener">' + esc(text) + '</a>'; };
     $('#main').innerHTML = '<div class="calc-head"><h2>' + esc(t('About')) + '</h2>' +
@@ -698,10 +733,10 @@
     if (narrow.addEventListener) narrow.addEventListener('change', options);
     sel.onchange = function () {
       // Each language has its own page (/, /de/, /nl/, …); keep the calculator in the hash.
-      var page = document.documentElement.dataset.page;
+      var page = PAGE_LANG;
       if (page && sel.value !== page) {
         PEC.i18n.setLang(sel.value);
-        location.href = (page === 'en' ? '' : '../') + (sel.value === 'en' ? '' : sel.value + '/') + location.hash;
+        location.href = langRoot(sel.value) + (state.def ? state.def.id + '/' : '') + location.hash;
         return;
       }
       setLanguage(sel.value);
@@ -732,7 +767,7 @@
       if (b.dataset.calc === MATERIALS_VIEW) { openMaterials(); return; }
       if (b.dataset.calc === ABOUT_VIEW) { openAbout(); return; }
       openCalc(b.dataset.calc);
-      history.replaceState(null, '', store.toHash(state.def.id, state.values));
+      setUrl(store.toHash(state.def.id, state.values));
     });
     $('#search').addEventListener('input', function (e) { renderNav(e.target.value); });
     // Skip link: move focus to the calculator without touching the URL hash (it holds the inputs).
@@ -785,6 +820,7 @@
 
     if (!routeFromHash()) {
       var last = store.lastCalc();
+      if (PAGE_CALC && PEC.get(PAGE_CALC)) last = PAGE_CALC;
       if (last === MATERIALS_VIEW) openMaterials();
       else if (last === ABOUT_VIEW) openAbout();
       else openCalc(last && PEC.get(last) ? last : PEC.list[0].id);

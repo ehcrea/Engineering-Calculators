@@ -6,6 +6,12 @@
   'use strict';
   var PEC = root.PEC, t = PEC.t;
   var loading = null;
+  // The vendor folder sits next to js/; work it out from this script so it also loads on the
+  // language and calculator pages (de/, leaf-spring/, …).
+  var VENDOR = (function () {
+    var cur = document.currentScript && document.currentScript.src;
+    return cur ? cur.replace(/js\/pdf\.js(\?.*)?$/, 'vendor/') : 'vendor/';
+  })();
 
   function loadScript(src) {
     return new Promise(function (resolve, reject) {
@@ -19,9 +25,9 @@
 
   function ensureLibs() {
     if (!loading) {
-      loading = loadScript('vendor/jspdf.umd.min.js')
-        .then(function () { return loadScript('vendor/jspdf.plugin.autotable.min.js'); })
-        .then(function () { return loadScript('vendor/dejavu-sans-subset.js'); });
+      loading = loadScript(VENDOR + 'jspdf.umd.min.js')
+        .then(function () { return loadScript(VENDOR + 'jspdf.plugin.autotable.min.js'); })
+        .then(function () { return loadScript(VENDOR + 'dejavu-sans-subset.js'); });
     }
     return loading;
   }

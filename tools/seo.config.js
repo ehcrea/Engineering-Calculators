@@ -9,7 +9,7 @@ const ROOT = path.join(__dirname, '..');
 const ctx = vm.createContext({ console });
 ctx.window = ctx; ctx.globalThis = ctx;
 ['js/core.js', 'js/i18n.js', 'js/i18n/de.js', 'js/i18n/es.js', 'js/i18n/nl.js', 'js/i18n/tr.js', 'js/materials.js', 'js/sections.js', 'js/common.js',
-  'js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js',
+  'js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js', 'js/theory.js',
 ].forEach((f) => vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f }));
 const PEC = ctx.PEC;
 const LANGS = ['en', 'de', 'nl', 'tr', 'es'];
@@ -25,11 +25,11 @@ const meta = {
     es: 'Calculadoras de ingeniería de precisión: flexiones, vigas, contacto de Hertz y diseño térmico',
   },
   description: {
-    en: 'Free online calculators for precision mechanical design, based on the JPE Precision Point formulas: leaf springs, notch hinges and other flexures, beam bending, torsion and buckling, Hertz contact, eigenfrequency, motion profiles and thermal effects. Metric or US units, PDF reports.',
-    de: 'Kostenlose Online-Rechner für die präzisionsmechanische Konstruktion nach den Formeln von JPE Precision Point: Blattfedern, Festkörpergelenke, Balkenbiegung, Torsion und Knickung, Hertzsche Pressung, Eigenfrequenz, Bewegungsprofile und thermische Effekte. Metrische oder US-Einheiten, PDF-Berichte.',
-    nl: 'Gratis online rekenmodules voor precisiemechanisch ontwerp, gebaseerd op de formules van JPE Precision Point: bladveren, scharnieren en andere flexures, buiging, torsie en knik van balken, Hertz-contact, eigenfrequentie, bewegingsprofielen en thermische effecten. Metrische of Amerikaanse eenheden, PDF-rapporten.',
-    tr: 'JPE Precision Point formüllerine dayanan, hassas mekanik tasarım için ücretsiz çevrim içi hesaplayıcılar: yaprak yaylar, çentikli mafsallar ve diğer esnek mafsallar, kiriş eğilmesi, burulma ve burkulma, Hertz teması, doğal frekans, hareket profilleri ve ısıl etkiler. Metrik veya ABD birimleri, PDF raporları.',
-    es: 'Calculadoras gratuitas en línea para diseño mecánico de precisión, basadas en las fórmulas de JPE Precision Point: ballestas, bisagras elásticas y otras flexiones, flexión, torsión y pandeo de vigas, contacto de Hertz, frecuencia propia, perfiles de movimiento y efectos térmicos. Unidades métricas o de EE. UU., informes PDF.',
+    en: 'Free online calculators for precision mechanical design by E. Tozlu: leaf springs, notch hinges and other flexures, beam bending, torsion and buckling, Hertz contact, eigenfrequency, motion profiles and thermal effects. Metric or US units, PDF reports. Formulas based on the free JPE Precision Point articles.',
+    de: 'Kostenlose Online-Rechner für die präzisionsmechanische Konstruktion von E. Tozlu: Blattfedern, Festkörpergelenke, Balkenbiegung, Torsion und Knickung, Hertzsche Pressung, Eigenfrequenz, Bewegungsprofile und thermische Effekte. Metrische oder US-Einheiten, PDF-Berichte. Formeln nach den frei verfügbaren Artikeln von JPE Precision Point.',
+    nl: 'Gratis online rekenmodules voor precisiemechanisch ontwerp door E. Tozlu: bladveren, scharnieren en andere flexures, buiging, torsie en knik van balken, Hertz-contact, eigenfrequentie, bewegingsprofielen en thermische effecten. Metrische of Amerikaanse eenheden, PDF-rapporten. Formules gebaseerd op de gratis artikelen van JPE Precision Point.',
+    tr: 'E. Tozlu tarafından hazırlanan, hassas mekanik tasarım için ücretsiz çevrim içi hesaplayıcılar: yaprak yaylar, çentikli mafsallar ve diğer esnek mafsallar, kiriş eğilmesi, burulma ve burkulma, Hertz teması, doğal frekans, hareket profilleri ve ısıl etkiler. Metrik veya ABD birimleri, PDF raporları. Formüller ücretsiz JPE Precision Point makalelerine dayanır.',
+    es: 'Calculadoras gratuitas en línea para diseño mecánico de precisión, por E. Tozlu: ballestas, bisagras elásticas y otras flexiones, flexión, torsión y pandeo de vigas, contacto de Hertz, frecuencia propia, perfiles de movimiento y efectos térmicos. Unidades métricas o de EE. UU., informes PDF. Fórmulas basadas en los artículos gratuitos de JPE Precision Point.',
   },
 };
 
@@ -45,12 +45,33 @@ function intro(l) {
   }
   const html = '<div class="calc-head"><h2>' + esc(t('Precision Engineering Calculators')) + '</h2><p class="calc-desc">' + esc(meta.description[l]) + '</p></div>' +
     groups.map((g) => '<h3>' + esc(t(g.name)) + '</h3><ul>' +
-      g.items.map((d) => '<li><a href="#/' + d.id + '">' + esc(t(d.title)) + '</a>: ' + esc(t(d.description)) + '</li>').join('') + '</ul>').join('');
+      g.items.map((d) => '<li><a href="' + d.id + '/">' + esc(t(d.title)) + '</a>: ' + esc(t(d.description)) + '</li>').join('') + '</ul>').join('');
   PEC.i18n.setLang('en', false);
   return html;
 }
 
+/** Title, description and crawlable text of one calculator's own page. */
+function calcPage(l, id) {
+  PEC.i18n.setLang(l, false);
+  const t = PEC.t;
+  const def = PEC.get(id);
+  const th = (PEC.THEORY || {})[id];
+  const site = t('Precision Engineering Calculators');
+  const name = t('{name} calculator', { name: t(def.title) });
+  const list = (items) => '<ul>' + items.map((x) => '<li>' + esc(t(x)) + '</li>').join('') + '</ul>';
+  const html = '<div class="calc-head"><h2>' + esc(name) + '</h2><p class="calc-desc">' + esc(t(def.description)) + '</p></div>' +
+    (th ? '<h3>' + esc(t('How it works')) + '</h3><p>' + esc(t(th.intro)) + '</p>' +
+      (th.points && th.points.length ? '<h3>' + esc(t('Key points')) + '</h3>' + list(th.points) : '') +
+      (th.assumptions && th.assumptions.length ? '<h3>' + esc(t('Assumptions')) + '</h3>' + list(th.assumptions) : '') : '') +
+    '<p><a href="../">' + esc(t('All calculators')) + '</a> · <a href="' + esc(def.source) + '">' + esc(t('Full article on JPE Precision Point')) + '</a></p>';
+  const out = { title: name + ' | ' + site, description: t(def.description), name, html };
+  PEC.i18n.setLang('en', false);
+  return out;
+}
+
 module.exports = {
+  calcs: () => PEC.list.map((d) => d.id),
+  calcPage,
   base: 'https://ehcrea.github.io/Engineering-Calculators/',
   repo: 'https://github.com/ehcrea/Engineering-Calculators',
   name: 'Precision Engineering Calculators',

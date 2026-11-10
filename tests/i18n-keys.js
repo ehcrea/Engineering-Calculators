@@ -20,7 +20,7 @@ module.exports = function collect(PEC, ROOT) {
   var STR = /'(?:[^'\\\n]|\\.)*'(?!\s*\+)/;
 
   // Literal texts passed to t()/T()/PEC.t() and in data-i18n attributes.
-  ['js/app.js', 'js/pdf.js', 'js/preview.js', 'js/chart.js'].forEach(function (f) {
+  ['js/app.js', 'js/pdf.js', 'js/preview.js', 'js/chart.js', 'tools/seo.config.js'].forEach(function (f) {
     var src = read(f), m, re = new RegExp('\\b(?:t|T|PEC\\.t)\\((' + STR.source + ')', 'g');
     while ((m = re.exec(src))) add(unquote(m[1]));
     // Ternaries inside a call: t(cond ? 'a' : 'b').

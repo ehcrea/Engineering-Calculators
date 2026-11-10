@@ -8,6 +8,9 @@
  *    can be read without JavaScript,
  *  - one page per language (de/, nl/, …; the root page is English) with the
  *    static text translated,
+ *  - one page per calculator and language (leaf-spring/, de/leaf-spring/, …)
+ *    with its own title, description and theory text, so search engines can
+ *    list each calculator; the app opens the calculator named in data-calc,
  *  - sitemap.xml.
  *
  * index.html is the template: edit it, then run `node tools/build-pages.js`.
@@ -23,20 +26,21 @@ const LANGS = cfg.langs; // English first
 const OG_LOCALE = { en: 'en_US', de: 'de_DE', nl: 'nl_NL', tr: 'tr_TR', es: 'es_ES' };
 const ASSET_RE = cfg.assets; // relative asset paths that need ../ on language pages
 
-const url = (l) => BASE + (l === 'en' ? '' : l + '/');
+const url = (l, calc) => BASE + (l === 'en' ? '' : l + '/') + (calc ? calc + '/' : '');
 const escAttr = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const escText = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const decode = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, '\u00a0').replace(/&amp;/g, '&');
 
-function seoBlock(l) {
-  const title = cfg.meta.title[l];
-  const desc = cfg.meta.description[l];
+function seoBlock(l, page) {
+  const calc = page ? page.id : '';
+  const title = page ? page.title : cfg.meta.title[l];
+  const desc = page ? page.description : cfg.meta.description[l];
   const ld = Object.assign({
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
-    name: cfg.name,
+    name: page ? page.name : cfg.name,
     alternateName: title,
-    url: url(l),
+    url: url(l, calc),
     description: desc,
     applicationCategory: 'EngineeringApplication',
     operatingSystem: 'Any (web browser)',
@@ -49,18 +53,18 @@ function seoBlock(l) {
     author: { '@type': 'Person', name: 'E. Tozlu', url: 'https://erentozlu.com' },
     publisher: { '@type': 'Organization', name: 'ehcrea', url: 'https://ehcrea.com' },
     codeRepository: cfg.repo,
-  }, cfg.featureList ? { featureList: cfg.featureList } : {});
+  }, page ? { isPartOf: { '@type': 'WebSite', name: cfg.name, url: url(l) } } : cfg.featureList ? { featureList: cfg.featureList } : {});
   const lines = [
     `<title>${escText(title)}</title>`,
     `<meta name="description" content="${escAttr(desc)}">`,
-    `<link rel="canonical" href="${url(l)}">`,
-    ...LANGS.map((x) => `<link rel="alternate" hreflang="${x}" href="${url(x)}">`),
-    `<link rel="alternate" hreflang="x-default" href="${url('en')}">`,
+    `<link rel="canonical" href="${url(l, calc)}">`,
+    ...LANGS.map((x) => `<link rel="alternate" hreflang="${x}" href="${url(x, calc)}">`),
+    `<link rel="alternate" hreflang="x-default" href="${url('en', calc)}">`,
     `<meta property="og:type" content="website">`,
     `<meta property="og:site_name" content="ehcrea">`,
     `<meta property="og:title" content="${escAttr(title)}">`,
     `<meta property="og:description" content="${escAttr(desc)}">`,
-    `<meta property="og:url" content="${url(l)}">`,
+    `<meta property="og:url" content="${url(l, calc)}">`,
     `<meta property="og:image" content="${BASE}${cfg.ogImage}">`,
     `<meta property="og:image:width" content="1200">`,
     `<meta property="og:image:height" content="630">`,
@@ -122,17 +126,20 @@ function translateTextAndAttrs(html, d) {
   });
 }
 
-function build(template, l) {
+const BLOCKS = cfg.blocks ? cfg.blocks() : {};
+
+function build(template, l, page) {
   let s = template;
-  s = s.replace(/<!-- seo: generated[\s\S]*?<!-- \/seo -->/, seoBlock(l));
-  s = s.replace(/<html lang="\w+"([^>]*) data-page="\w+">/, `<html lang="${l}"$1 data-page="${l}">`);
-  const blocks = cfg.blocks ? cfg.blocks() : {};
+  s = s.replace(/<!-- seo: generated[\s\S]*?<!-- \/seo -->/, seoBlock(l, page));
+  s = s.replace(/<html lang="\w+"([^>]*) data-page="\w+">/, `<html lang="${l}"$1 data-page="${l}"${page ? ` data-calc="${page.id}"` : ''}>`);
   s = s.replace(/<!--i18n:(\w+)-->[\s\S]*?<!--\/i18n:\1-->/g, (m, k) => {
-    if (!blocks[k]) throw new Error('Unknown text block ' + k);
-    return `<!--i18n:${k}-->${blocks[k][l] || blocks[k].en}<!--/i18n:${k}-->`;
+    if (k === 'intro' && page) return `<!--i18n:${k}-->${page.html}<!--/i18n:${k}-->`;
+    if (!BLOCKS[k]) throw new Error('Unknown text block ' + k);
+    return `<!--i18n:${k}-->${BLOCKS[k][l] || BLOCKS[k].en}<!--/i18n:${k}-->`;
   });
+  const up = (l === 'en' ? 0 : 1) + (page ? 1 : 0);
+  if (up) s = s.replace(ASSET_RE, `$1="${'../'.repeat(up)}$2`);
   if (l === 'en') return s;
-  s = s.replace(ASSET_RE, '$1="../$2');
   const d = cfg.dict(l);
   const i = s.indexOf('<body');
   const head = s.slice(0, i);
@@ -151,23 +158,29 @@ const template = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 if (!/<!-- seo: generated/.test(template) || !/ data-page="en"/.test(template)) {
   throw new Error('index.html needs the <!-- seo --> markers and data-page="en" on <html>');
 }
+const CALCS = cfg.calcs ? cfg.calcs() : [];
+let count = 0;
 for (const l of LANGS) {
-  const out = build(template, l);
-  const file = l === 'en' ? path.join(ROOT, 'index.html') : path.join(ROOT, l, 'index.html');
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, out);
-  console.log('wrote', path.relative(ROOT, file));
+  const dir = l === 'en' ? ROOT : path.join(ROOT, l);
+  for (const id of [''].concat(CALCS)) {
+    const page = id ? Object.assign({ id }, cfg.calcPage(l, id)) : null;
+    const file = path.join(dir, id, 'index.html');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, build(template, l, page));
+    count++;
+  }
 }
+console.log('wrote', count, 'pages');
 
 const today = new Date().toISOString().slice(0, 10);
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
-${LANGS.map((l) => `  <url>
-    <loc>${url(l)}</loc>
+${[''].concat(CALCS).map((c) => LANGS.map((l) => `  <url>
+    <loc>${url(l, c)}</loc>
     <lastmod>${today}</lastmod>
-${LANGS.map((x) => `    <xhtml:link rel="alternate" hreflang="${x}" href="${url(x)}"/>`).join('\n')}
-    <xhtml:link rel="alternate" hreflang="x-default" href="${url('en')}"/>
-  </url>`).join('\n')}
+${LANGS.map((x) => `    <xhtml:link rel="alternate" hreflang="${x}" href="${url(x, c)}"/>`).join('\n')}
+    <xhtml:link rel="alternate" hreflang="x-default" href="${url('en', c)}"/>
+  </url>`).join('\n')).join('\n')}
 </urlset>
 `;
 fs.writeFileSync(path.join(ROOT, 'sitemap.xml'), sitemap);
