@@ -909,6 +909,19 @@
     "Elastic deformation only (below yield)": "Alleen elastische vervorming (onder de vloeigrens)",
     "Hub and shaft of equal length, plane stress": "Naaf en as even lang, vlakke spanningstoestand",
     "Uniform pressure along the joint (no edge effects)": "Gelijkmatige druk langs de voeg (geen randeffecten)",
-    "Room temperature, no centrifugal load": "Kamertemperatuur, geen centrifugale belasting"
+    "Room temperature, no centrifugal load": "Kamertemperatuur, geen centrifugale belasting",
+    "top view": "bovenaanzicht",
+    "section through one groove": "doorsnede door één groef",
+    "pitch": "spoed",
+    "thread friction": "schroefdraadwrijving",
+    "head friction": "kopwrijving",
+    "Where the tightening torque goes": "Waar het aanhaalmoment heen gaat",
+    "shaft": "as",
+    "hub": "naaf",
+    "stress across the wall": "spanning over de wanddikte",
+    "depth w foreshortened in the oblique view": "diepte w verkort in het schuine aanzicht",
+    "parallel axis distance not to scale": "afstand van de evenwijdige as niet op schaal",
+    "ball and groove enlarged in the top view": "kogel en groef vergroot in het bovenaanzicht",
+    "plate and thread lengths schematic": "plaat- en draadlengtes schematisch"
   });
 })(typeof window !== 'undefined' ? window : globalThis);

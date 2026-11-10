@@ -909,6 +909,19 @@
     "Elastic deformation only (below yield)": "Nur elastische Verformung (unterhalb der Streckgrenze)",
     "Hub and shaft of equal length, plane stress": "Nabe und Welle gleich lang, ebener Spannungszustand",
     "Uniform pressure along the joint (no edge effects)": "Gleichmäßige Pressung entlang der Fuge (keine Randeffekte)",
-    "Room temperature, no centrifugal load": "Raumtemperatur, keine Fliehkraftbelastung"
+    "Room temperature, no centrifugal load": "Raumtemperatur, keine Fliehkraftbelastung",
+    "top view": "Draufsicht",
+    "section through one groove": "Schnitt durch eine Nut",
+    "pitch": "Steigung",
+    "thread friction": "Gewindereibung",
+    "head friction": "Kopfreibung",
+    "Where the tightening torque goes": "Wohin das Anziehdrehmoment geht",
+    "shaft": "Welle",
+    "hub": "Nabe",
+    "stress across the wall": "Spannung über die Wanddicke",
+    "depth w foreshortened in the oblique view": "Tiefe w in der Schrägansicht verkürzt",
+    "parallel axis distance not to scale": "Abstand der parallelen Achse nicht maßstäblich",
+    "ball and groove enlarged in the top view": "Kugel und Nut in der Draufsicht vergrößert",
+    "plate and thread lengths schematic": "Platten- und Gewindelängen schematisch"
   });
 })(typeof window !== 'undefined' ? window : globalThis);

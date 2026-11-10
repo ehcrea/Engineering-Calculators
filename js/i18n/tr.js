@@ -909,6 +909,19 @@
     "Elastic deformation only (below yield)": "Yalnızca elastik şekil değiştirme (akma altında)",
     "Hub and shaft of equal length, plane stress": "Göbek ve mil eşit uzunlukta, düzlem gerilme",
     "Uniform pressure along the joint (no edge effects)": "Geçme boyunca düzgün basınç (kenar etkisi yok)",
-    "Room temperature, no centrifugal load": "Oda sıcaklığı, merkezkaç yük yok"
+    "Room temperature, no centrifugal load": "Oda sıcaklığı, merkezkaç yük yok",
+    "top view": "üstten görünüş",
+    "section through one groove": "bir oluktan kesit",
+    "pitch": "adım",
+    "thread friction": "diş sürtünmesi",
+    "head friction": "baş sürtünmesi",
+    "Where the tightening torque goes": "Sıkma torku nereye gider",
+    "shaft": "mil",
+    "hub": "göbek",
+    "stress across the wall": "cidar boyunca gerilme",
+    "depth w foreshortened in the oblique view": "eğik görünüşte w derinliği kısaltılmış",
+    "parallel axis distance not to scale": "paralel eksen uzaklığı ölçekli değil",
+    "ball and groove enlarged in the top view": "üstten görünüşte bilye ve oluk büyütülmüş",
+    "plate and thread lengths schematic": "plaka ve diş uzunlukları şematik"
   });
 })(typeof window !== 'undefined' ? window : globalThis);

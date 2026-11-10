@@ -909,6 +909,19 @@
     "Elastic deformation only (below yield)": "Solo deformación elástica (por debajo del límite elástico)",
     "Hub and shaft of equal length, plane stress": "Cubo y eje de igual longitud, tensión plana",
     "Uniform pressure along the joint (no edge effects)": "Presión uniforme a lo largo de la unión (sin efectos de borde)",
-    "Room temperature, no centrifugal load": "Temperatura ambiente, sin carga centrífuga"
+    "Room temperature, no centrifugal load": "Temperatura ambiente, sin carga centrífuga",
+    "top view": "vista superior",
+    "section through one groove": "sección por una ranura",
+    "pitch": "paso",
+    "thread friction": "rozamiento en la rosca",
+    "head friction": "rozamiento bajo la cabeza",
+    "Where the tightening torque goes": "A dónde va el par de apriete",
+    "shaft": "eje",
+    "hub": "cubo",
+    "stress across the wall": "tensión a través de la pared",
+    "depth w foreshortened in the oblique view": "profundidad w acortada en la vista oblicua",
+    "parallel axis distance not to scale": "distancia al eje paralelo no a escala",
+    "ball and groove enlarged in the top view": "bola y ranura ampliadas en la vista superior",
+    "plate and thread lengths schematic": "longitudes de placa y rosca esquemáticas"
   });
 })(typeof window !== 'undefined' ? window : globalThis);
