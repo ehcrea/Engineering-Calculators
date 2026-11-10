@@ -31,7 +31,7 @@ module.exports = function collect(PEC, ROOT) {
   while ((hm = hre.exec(html))) add(hm[1]);
 
   // Conditional texts: warnings, sketch notes, error messages.
-  ['js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js', 'js/sections.js', 'js/common.js', 'js/preview.js', 'js/storage.js', 'js/app.js'].forEach(function (f) {
+  ['js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js', 'js/calculators/elements.js', 'js/sections.js', 'js/common.js', 'js/preview.js', 'js/storage.js', 'js/app.js'].forEach(function (f) {
     var src = read(f), m;
     var re = new RegExp('(?:warnings\\.push|w\\.push|notes\\.push|new Error)\\((' + STR.source + ')', 'g');
     while ((m = re.exec(src))) add(unquote(m[1]));
@@ -45,7 +45,7 @@ module.exports = function collect(PEC, ROOT) {
 
   // Calculator definitions and everything they produce for each select option.
   PEC.list.forEach(function (def) {
-    add(def.title); add(def.category); add(def.description);
+    add(def.title); add(def.category); add(def.description); add(def.basis);
     (def.corrections || []).forEach(function (c) { add(c.text); });
     def.inputs.forEach(function (inp) {
       add(inp.label); add(inp.hint);

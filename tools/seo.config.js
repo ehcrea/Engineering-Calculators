@@ -9,7 +9,7 @@ const ROOT = path.join(__dirname, '..');
 const ctx = vm.createContext({ console });
 ctx.window = ctx; ctx.globalThis = ctx;
 ['js/core.js', 'js/i18n.js', 'js/i18n/de.js', 'js/i18n/es.js', 'js/i18n/nl.js', 'js/i18n/tr.js', 'js/materials.js', 'js/sections.js', 'js/common.js',
-  'js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js', 'js/theory.js',
+  'js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js', 'js/calculators/elements.js', 'js/theory.js',
 ].forEach((f) => vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f }));
 const PEC = ctx.PEC;
 const LANGS = ['en', 'de', 'nl', 'tr', 'es'];
@@ -63,7 +63,7 @@ function calcPage(l, id) {
     (th ? '<h3>' + esc(t('How it works')) + '</h3><p>' + esc(t(th.intro)) + '</p>' +
       (th.points && th.points.length ? '<h3>' + esc(t('Key points')) + '</h3>' + list(th.points) : '') +
       (th.assumptions && th.assumptions.length ? '<h3>' + esc(t('Assumptions')) + '</h3>' + list(th.assumptions) : '') : '') +
-    '<p><a href="../">' + esc(t('All calculators')) + '</a> · <a href="' + esc(def.source) + '">' + esc(t('Full article on JPE Precision Point')) + '</a></p>';
+    '<p><a href="../">' + esc(t('All calculators')) + '</a>' + (def.source ? ' · <a href="' + esc(def.source) + '">' + esc(t('Full article on JPE Precision Point')) + '</a>' : ' · ' + esc(t('Based on:')) + ' ' + esc(t(def.basis))) + '</p>';
   const out = { title: name + ' | ' + site, description: t(def.description), name, html };
   PEC.i18n.setLang('en', false);
   return out;
@@ -78,7 +78,7 @@ module.exports = {
   ogImage: 'icons/og-image.png',
   langs: LANGS,
   meta,
-  featureList: ['Flexures: leaf spring, wire flexure, folded leaf spring, notch hinge, cross spring pivot', 'Beam theory: area moment of inertia, bending, torsion, Euler buckling', 'Hertz contact, impact force, stiffness and eigenfrequency', 'Third order motion profiles', 'Thermal expansion and thermal shrinkage in bolted joints', 'PDF reports', 'English, German, Dutch, Turkish and Spanish'],
+  featureList: ['Flexures: leaf spring, wire flexure, folded leaf spring, notch hinge, cross spring pivot', 'Beam theory: area moment of inertia, bending, torsion, Euler buckling', 'Hertz contact, impact force, stiffness and eigenfrequency', 'Mass moment of inertia and kinematic coupling preload', 'Bolt preload and tightening torque (VDI 2230), press fits (DIN 7190)', 'Third order motion profiles', 'Thermal expansion and thermal shrinkage in bolted joints', 'PDF reports', 'English, German, Dutch, Turkish and Spanish'],
   dict: (l) => PEC.i18n.dict(l),
   blocks: () => ({ intro: Object.fromEntries(LANGS.map((l) => [l, intro(l)])) }),
   assets: /\b(href|src)="(favicon\.ico|icons\/|css\/|js\/|site\.webmanifest)/g,

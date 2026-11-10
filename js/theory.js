@@ -162,6 +162,47 @@
         'Use low-expansion materials (Invar, Zerodur, SiC) or matched pairs, and design so the thermal centre does not move.'
       ],
       assumptions: ['Constant α over the temperature range', 'Free expansion']
+    },
+    'mass-moment-of-inertia': {
+      intro: 'The mass moment of inertia J is to rotation what mass is to translation: a torque M gives an angular acceleration M/J. It grows with the square of the distance of the mass from the axis, so the outer material dominates.',
+      points: [
+        'A tube with the same mass as a solid rod has a much larger J about its axis: the mass sits further out.',
+        'Doubling the diameter of a disc of the same thickness makes J 16× larger (mass 4×, radius² 4×).',
+        'About a parallel axis at distance d: J\' = J + m·d². Keep rotating parts compact around the axis.',
+        'For a fast rotary stage, compare the load inertia with the motor inertia; a ratio below about 5 keeps the servo loop easy to tune.'
+      ],
+      assumptions: ['Homogeneous material (uniform density)', 'Ideal shapes: no holes, chamfers or fillets', 'Axes through the centre of mass unless a parallel axis is given']
+    },
+    'kinematic-coupling': {
+      intro: 'A kinematic coupling places a part with exactly six contacts: three balls, each sitting in a V-groove with two contacts. It fixes all six degrees of freedom without overconstraint, so the part returns to the same position to within a micrometre or better every time it is placed.',
+      points: [
+        'Point the three grooves at the centre of the ball circle. The coupling then has the best stability against all rotations.',
+        'Each contact carries N = F/(6·cos θ). With 45° flanks that is 0.24·F per contact.',
+        'Hertz stiffness grows with the preload (k ∝ F^⅓), so more preload gives a stiffer, but more heavily stressed, contact.',
+        'Hardened balls and grooves (or ceramic balls) allow pressures of several GPa; soft materials fret and wear, which spoils the repeatability.',
+        'Friction in the grooves causes hysteresis; a small vibration or lubrication helps the balls settle.'
+      ],
+      assumptions: ['Frictionless contacts, vertical preload through the centre of the ball circle', 'Ball on a flat flank (straight V-groove)', 'Elastic Hertz contact, no plastic deformation', 'Grooves symmetric at 120°, pointing to the centre']
+    },
+    'bolt-preload': {
+      intro: 'A bolt works as a stiff spring: the preload clamps the joint, and the joint only holds as long as the clamping force is larger than the separating loads. During tightening the bolt carries both tension and the torsion from the thread friction, so the usable preload follows from the combined (von Mises) stress.',
+      points: [
+        'Only about 10–15 % of the torque goes into preload; the rest is lost to friction in the thread and under the head.',
+        'The preload for a given torque scatters with the friction coefficient: ±30 % or more with a plain torque wrench.',
+        'Lubricate consistently. Lower friction raises the preload at the same torque, so use the torque that belongs to the real friction.',
+        'Utilisation ν = 90 % of the yield strength is the usual VDI 2230 value for the assembly preload.'
+      ],
+      assumptions: ['ISO metric coarse thread, 60° flank angle', 'Minimum yield strength per ISO 898-1', 'Torque-controlled tightening in the elastic range', 'No embedding, thermal or external loads (assembly state only)']
+    },
+    'press-fit': {
+      intro: 'In a press fit the shaft is slightly larger than the hub bore. After assembly both parts deform elastically and the contact pressure p transmits torque and axial force by friction, without keys or adhesives.',
+      points: [
+        'The surfaces smooth out during pressing; DIN 7190 loses about 0.8·(Rz_shaft + Rz_hub) of the measured interference.',
+        'The hub bore carries the highest stress. A thicker hub (smaller Q_a) lowers the stress at the same pressure.',
+        'Shrinking (heating the hub) instead of pressing keeps the surfaces intact and gives a higher friction coefficient.',
+        'The hub outer diameter grows by ΔD_a: important when a bearing or precision surface sits on the outside.'
+      ],
+      assumptions: ['Elastic deformation only (below yield)', 'Hub and shaft of equal length, plane stress', 'Uniform pressure along the joint (no edge effects)', 'Room temperature, no centrifugal load']
     }
   };
 
