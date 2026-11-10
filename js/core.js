@@ -16,7 +16,7 @@
     'Nm²': 1, 'Nm/rad': 1, 'Nmm/rad': 1e-3, 'Nm/mrad': 1e3,
     'Pa': 1, 'MPa': 1e6, 'GPa': 1e9,
     'rad': 1, 'mrad': 1e-3, 'µrad': 1e-6, 'deg': Math.PI / 180,
-    'kg': 1, 'g': 1e-3, 'kg/m³': 1,
+    'kg': 1, 'g': 1e-3, 'kg/m³': 1, 'cm³': 1e-6, 'kg·m²': 1, 'kg·mm²': 1e-6,
     'Hz': 1, 's': 1, 'ms': 1e-3, 'µs': 1e-6,
     'm/s': 1, 'mm/s': 1e-3,
     'm/s²': 1, 'mm/s²': 1e-3, 'g₀': 9.80665,
@@ -28,7 +28,7 @@
     'lbf': 4.4482216152605, 'lbf/in': 175.126835246476,
     'lbf·in': 0.112984829027617, 'lbf·in/rad': 0.112984829027617, 'lbf·in²': 0.00286981465730147,
     'psi': 6894.75729316836, 'ksi': 6894757.29316836, 'Msi': 6894757293.16836,
-    'lb': 0.45359237, 'lb/in³': 27679.9047102031,
+    'lb': 0.45359237, 'lb/in³': 27679.9047102031, 'lb·in²': 2.926396534292e-4,
     'in/s': 0.0254, 'in/s²': 0.0254, 'in/s³': 0.0254,
     '°F': 5 / 9, 'µin/in·°F': 1.8e-6, 'Btu/lb·°F': 4186.8, 'Btu/h·ft·°F': 1.73073466637139
   };
@@ -43,7 +43,7 @@
     'Nm': 'lbf·in', 'Nmm': 'lbf·in', 'mNm': 'lbf·in', 'Nm²': 'lbf·in²',
     'Nm/rad': 'lbf·in/rad', 'Nmm/rad': 'lbf·in/rad', 'Nm/mrad': 'lbf·in/rad',
     'Pa': 'psi', 'MPa': 'ksi', 'GPa': 'Msi',
-    'kg': 'lb', 'g': 'lb', 'kg/m³': 'lb/in³',
+    'kg': 'lb', 'g': 'lb', 'kg/m³': 'lb/in³', 'cm³': 'in³', 'kg·m²': 'lb·in²', 'kg·mm²': 'lb·in²',
     'm/s': 'in/s', 'mm/s': 'in/s', 'm/s²': 'in/s²', 'mm/s²': 'in/s²', 'm/s³': 'in/s³', 'mm/s³': 'in/s³',
     'K': '°F', 'µm/m·K': 'µin/in·°F', 'J/kg·K': 'Btu/lb·°F', 'W/m·K': 'Btu/h·ft·°F'
   };

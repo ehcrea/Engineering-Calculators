@@ -196,7 +196,7 @@
     var form = def.inputs.map(function (inp) { return fieldHtml(inp, v); }).join('');
     $('#main').innerHTML =
       '<div class="calc-head"><div class="title-row">' + helpHtml(def) + '<h2>' + esc(t(def.title)) + '</h2></div><p>' + esc(t(def.description || '')) + '</p>' +
-      '<div class="meta">' + esc(t('Source:')) + ' <a href="' + esc(def.source) + '" target="_blank" rel="noopener">JPE Precision Point – ' + esc(def.title) + '</a>' +
+      '<div class="meta">' + (def.source ? esc(t('Source:')) + ' <a href="' + esc(def.source) + '" target="_blank" rel="noopener">JPE Precision Point – ' + esc(def.title) + '</a>' : esc(t('Based on:')) + ' ' + esc(t(def.basis || ''))) +
       '<span id="loadedName"></span></div></div>' +
       '<div class="calc-actions toolbar">' +
       '<button class="btn primary" id="btnSave">' + esc(t('Save')) + '</button>' +
@@ -221,7 +221,7 @@
       '</div><div id="preview" role="img" aria-label="' + esc(t('Geometry sketch: {name}', { name: t(def.title) })) + '" aria-describedby="previewNotes"></div><p class="preview-caption" id="previewCaption" hidden></p><p class="preview-notes" id="previewNotes"></p></div>' +
       '<div class="card"><h3>' + esc(t('Results')) + '</h3><div id="warnings"></div><table class="results"><tbody id="results"></tbody></table><div class="charts" id="charts"></div></div>' +
       '<div class="card formulas"><h3>' + esc(t('Formulas')) + '</h3><ul id="formulas"></ul>' +
-      '<p class="disclaimer">' + t('Formulas from the free {link} resource. This is an independent tool, not affiliated with JPE. Check results before relying on them for critical designs.', { link: '<a href="https://www.jpe-innovations.com/precision-point/" target="_blank" rel="noopener">JPE Precision Point</a>' }) + '</p></div>' +
+      '<p class="disclaimer">' + (def.source ? t('Formulas from the free {link} resource. This is an independent tool, not affiliated with JPE. Check results before relying on them for critical designs.', { link: '<a href="https://www.jpe-innovations.com/precision-point/" target="_blank" rel="noopener">JPE Precision Point</a>' }) : esc(t('Check results before relying on them for critical designs.'))) + '</p></div>' +
       correctionsHtml(PEC.common.citations(def.corrections), t('Differences from the JPE article')) + '</div>' +
       '</div>';
 
@@ -402,7 +402,7 @@
       (t.points && t.points.length ? '<h4>' + esc(PEC.t('Key points')) + '</h4>' + list(t.points) : '') +
       (t.assumptions && t.assumptions.length ? '<h4>' + esc(PEC.t('Assumptions')) + '</h4>' + list(t.assumptions) : '') +
       (PEC.preview.animates(def.id) ? '<p class="help-tip">' + esc(PEC.t('Tip: press ▶ Animate on the sketch to see the motion.')) + '</p>' : '') +
-      '<p class="help-src"><a href="' + esc(def.source) + '" target="_blank" rel="noopener">' + esc(PEC.t('Full article on JPE Precision Point')) + '</a></p>' +
+      (def.source ? '<p class="help-src"><a href="' + esc(def.source) + '" target="_blank" rel="noopener">' + esc(PEC.t('Full article on JPE Precision Point')) + '</a></p>' : '') +
       '</div></span>';
   }
 
@@ -611,7 +611,8 @@
       inputs: inputs, results: results, warnings: res.warnings.map(function (w) { return t(w); }), charts: charts,
       formulas: (typeof def.formulas === 'function' ? def.formulas(v) : (def.formulas || [])).map(function (f) { return t(f); }),
       corrections: PEC.common.citations(def.corrections),
-      source: def.source
+      source: def.source || t(def.basis || ''),
+      jpe: !!def.source
     }, fileBase() + '.pdf'); }).then(function () {
       toast(t('PDF downloaded'));
     }, function (err) {

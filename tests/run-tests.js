@@ -9,7 +9,7 @@ var vm = require('vm');
 
 var ROOT = path.join(__dirname, '..');
 ['js/core.js', 'js/i18n.js', 'js/i18n/de.js', 'js/i18n/es.js', 'js/i18n/nl.js', 'js/i18n/tr.js', 'js/materials.js', 'js/sections.js', 'js/common.js',
-  'js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js', 'js/theory.js', 'js/preview.js'
+  'js/calculators/flexures.js', 'js/calculators/beams.js', 'js/calculators/dynamics.js', 'js/calculators/elements.js', 'js/theory.js', 'js/preview.js'
 ].forEach(function (f) { vm.runInThisContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), { filename: f }); });
 
 var PEC = globalThis.PEC;
@@ -159,6 +159,36 @@ ANIM_CASES.forEach(function (c) {
   });
 });
 ok(PEC.preview.render('cross-section', PEC.inputsToSI(PEC.get('cross-section'), PEC.defaults(PEC.get('cross-section'))), PEC.run(PEC.get('cross-section'), PEC.defaults(PEC.get('cross-section'))), COLORS, 0.5) !== null, 'non-animated preview ignores the phase');
+
+// Mass moment of inertia: steel cylinder D 50 × L 100 mm.
+var mCyl = 7850 * Math.PI * 0.025 * 0.025 * 0.1;
+close(result('mass-moment-of-inertia', { shape: 'cyl', D: 50, L: 100, rho: 7850 }, 'm'), mCyl, 1e-9, 'MOI cylinder mass');
+close(result('mass-moment-of-inertia', { shape: 'cyl', D: 50, L: 100, rho: 7850 }, 'J_z'), mCyl * 0.025 * 0.025 / 2, 1e-9, 'MOI cylinder Jz = m r²/2');
+close(result('mass-moment-of-inertia', { shape: 'cyl', D: 50, L: 100, rho: 7850 }, 'J_x'), mCyl * (3 * 0.025 * 0.025 + 0.01) / 12, 1e-9, 'MOI cylinder Jx');
+close(result('mass-moment-of-inertia', { shape: 'sphere', D: 40, m: 2 }, 'J_z'), 0.4 * 2 * 0.02 * 0.02, 1e-9, 'MOI sphere 2/5 m r²');
+close(result('mass-moment-of-inertia', { shape: 'block', w: 40, hh: 20, L: 100, m: 3 }, 'J_y'), 3 * (0.0016 + 0.01) / 12, 1e-9, 'MOI block Jy');
+close(result('mass-moment-of-inertia', { shape: 'tube', D: 50, di: 30, L: 100, m: 1, dp: 100 }, "J_z'"), (0.0025 + 0.0009) / 8 + 0.01, 1e-9, 'MOI tube parallel axis');
+
+// Kinematic coupling: each contact equals a Hertz sphere-on-flat contact with N = F/(6 cos θ).
+var Nkc = 300 / (6 * Math.cos(Math.PI / 4));
+close(result('kinematic-coupling', { F: 300, theta: 45, Db: 10 }, 'N'), Nkc, 1e-9, 'coupling contact force');
+close(result('kinematic-coupling', { F: 300, theta: 45, Db: 10 }, 'p_max'), result('hertz-contact', { r1x: 5, r1y: 5, r2x: 0, r2y: 0, F: Nkc }, 'σ_max'), 1e-6, 'coupling pressure = Hertz calculator');
+close(result('kinematic-coupling', { F: 300, theta: 45, Db: 10 }, 'k_n'), result('hertz-contact', { r1x: 5, r1y: 5, r2x: 0, r2y: 0, F: Nkc }, 'C_local'), 1e-6, 'coupling contact stiffness = Hertz tangent stiffness');
+close(result('kinematic-coupling', { F: 300, theta: 45 }, 'K_z') / result('kinematic-coupling', { F: 300, theta: 45 }, 'K_xy'), 2, 1e-9, 'coupling Kz = 2 Kxy at 45°');
+
+// Bolt preload: M8, hex head, µ = 0.12, ν = 90 % against the VDI 2230 formula worked by hand.
+close(result('bolt-preload', { size: 'M8', cls: '8.8', head: 'hex', muG: 0.12, muK: 0.12, util: 90 }, 'F_Mzul'), 18628, 2e-3, 'M8 8.8 preload');
+close(result('bolt-preload', { size: 'M8', cls: '8.8', head: 'hex', muG: 0.12, muK: 0.12, util: 90 }, 'M_A'), 24.57, 2e-3, 'M8 8.8 torque');
+close(result('bolt-preload', { size: 'M8', cls: '10.9', head: 'hex', muG: 0.12, muK: 0.12, util: 90 }, 'F_Mzul'), 18628 * 940 / 640, 2e-3, 'M8 10.9 preload');
+close(result('bolt-preload', { size: 'M8', cls: '8.8', head: 'hex', muG: 0.12, muK: 0.12, util: 90 }, 'A_s'), 36.61e-6, 1e-3, 'M8 stress area');
+var mA = result('bolt-preload', { size: 'M12', cls: '10.9' }, 'M_A');
+close(result('bolt-preload', { size: 'M12', cls: '10.9', T: mA }, 'σ_red/Rp₀.₂'), 0.9, 1e-9, 'torque check returns the utilisation');
+
+// Press fit: equal materials and a solid shaft give p = Z·E·(1 − Q²)/(2·D_F).
+close(result('press-fit', { DF: 30, Da: 60, Di: 0, U: 30, RzI: 0, RzA: 0, Ei: 210, Ea: 210, nui: 0.3, nua: 0.3 }, 'p'), 30e-6 * 210e9 * 0.75 / (2 * 0.03), 1e-9, 'press fit pressure');
+close(result('press-fit', { DF: 30, Da: 60, Di: 0, U: 38, RzI: 5, RzA: 5, Ei: 210, Ea: 210, nui: 0.3, nua: 0.3 }, 'Z'), 30e-6, 1e-9, 'press fit smoothing');
+var pPF = result('press-fit', { DF: 30, Da: 60, L: 30, mu: 0.1 }, 'p');
+close(result('press-fit', { DF: 30, Da: 60, L: 30, mu: 0.1 }, 'M_t'), 0.1 * pPF * Math.PI * 9e-4 * 0.03 / 2, 1e-9, 'press fit torque');
 
 // Every calculator has a theory note for the help icon.
 PEC.list.forEach(function (d) {

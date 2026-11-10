@@ -260,7 +260,7 @@ dialog::backdrop { background: rgb(0 0 0 / .35); }
   .field.wide { grid-template-columns: minmax(0, 1fr); }
   .calc-actions .more-toggle { display: inline-block; }
   table.results td { padding: 5px 4px; }
-  table.results td.val { white-space: normal; }
+  table.results td.val { white-space: normal; overflow-wrap: normal; }
   .calc-actions:not(.open) .secondary { display: none; }
 }
 @media (max-width: 420px) {
