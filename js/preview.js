@@ -838,21 +838,23 @@
     var DF = i.DF, Da = i.Da, Di = i.Di > 0 ? i.Di : 0;
     if (!(Da > DF) || !(Di < DF)) return null;
     var p = resItem(res, 'p');
-    var s = Sketch(480, 280, c), notes = [];
-    // Half-section above the axis: shaft (longer) and hub.
-    var k = Math.min(150 / (Da / 2), 170 / (i.L * 1.6)), ax = 210, x0 = 40, Lh = i.L * k, ls = Lh * 1.5;
+    var s = Sketch(500, 280, c), notes = [];
+    // Full longitudinal section: the hub (hatched) is cut through, the shaft sits in its bore.
+    // By drafting convention a solid shaft is not hatched; a hollow one shows its bore.
+    var k = Math.min(85 / (Da / 2), 150 / (i.L * 1.6)), ax = 145, Lh = i.L * k, ls = Lh * 1.6, x0 = 52, hx = x0 + ls - Lh - 8;
     var y = function (r) { return ax - r * k; };
+    var hatch = { fill: 'url(#' + s.id + 'h)' };
+    s.rect(hx, y(Da / 2), Lh, (Da - DF) / 2 * k, hatch);
+    s.rect(hx, y(-DF / 2), Lh, (Da - DF) / 2 * k, hatch);
+    s.rect(x0, y(DF / 2), ls, DF * k, { fill: c.fill2 });
+    if (Di > 0) s.rect(x0, y(Di / 2), ls, Di * k, { fill: c.bg });
     s.line(x0 - 10, ax, x0 + ls + 10, ax, { stroke: c.muted, 'stroke-width': 0.8, 'stroke-dasharray': '8 3 2 3' });
-    s.rect(x0, y(DF / 2), ls, (DF - Di) / 2 * k, { fill: c.fill2 });
-    var hx = x0 + (ls - Lh) / 2;
-    s.rect(hx, y(Da / 2), Lh, (Da - DF) / 2 * k, { fill: c.fill });
-    s.text(x0 + 16, (y(DF / 2) + y(Di / 2)) / 2, T('shaft'), { 'font-size': 11, 'text-anchor': 'start' });
-    s.text(hx + Lh / 2, (y(Da / 2) + y(DF / 2)) / 2, T('hub'), { 'font-size': 11 });
+    s.text(x0 + (hx - x0) / 2, y(DF / 2) - 10, T('shaft'), { 'font-size': 11 });
+    s.text(hx + Lh / 2, y(-Da / 2) + 13, T('hub'), { 'font-size': 11, 'dominant-baseline': 'hanging' });
     s.dim(hx, y(Da / 2), hx + Lh, y(Da / 2), 'L_F = ' + mm(i.L), -12);
-    s.dim(x0 + ls + 12, ax, x0 + ls + 12, y(DF / 2), '', 0);
-    s.text(x0 + ls + 18, y(DF / 4), 'D_F/2', { fill: c.muted, 'font-size': 10, 'text-anchor': 'start' });
-    s.dim(hx - 14, ax, hx - 14, y(Da / 2), '', 0);
-    s.text(hx - 20, y(Da / 2) + 10, 'D_a/2', { fill: c.muted, 'font-size': 10, 'text-anchor': 'end' });
+    s.dim(x0, y(DF / 2), x0, y(-DF / 2), 'D_F', 14, { labelAt: [x0 - 30, ax - 12] });
+    s.dim(hx + Lh, y(Da / 2), hx + Lh, y(-Da / 2), 'D_a', -26, { labelAt: [hx + Lh + 40, ax - 12] });
+    if (Di > 0) s.dim(x0 + 14, y(Di / 2), x0 + 14, y(-Di / 2), 'D_i', 0, { labelAt: [x0 + 30, ax - 10] });
     if (!p || !(p.value > 0)) return { svg: s.toString(), notes: notes };
     // Lamé stresses through shaft and hub, plotted against the radius.
     var P = p.value, a = Di / 2, b = DF / 2, cR = Da / 2, pts = { t: [], r: [] };
@@ -861,7 +863,7 @@
     for (var q = 0; q <= 30; q++) { var r = a + (b - a) * q / 30, v = shaft(Math.max(r, 1e-12)); pts.t.push([r, v[0]]); pts.r.push([r, v[1]]); }
     for (q = 0; q <= 30; q++) { r = b + (cR - b) * q / 30; v = hub(r); pts.t.push([r, v[0]]); pts.r.push([r, v[1]]); }
     var all = pts.t.concat(pts.r).map(function (e) { return e[1]; }), vmax = Math.max.apply(null, all), vmin = Math.min.apply(null, all);
-    var gx = 300, gw = 160, gy0 = 40, gh = 200, sy = function (v) { return gy0 + (vmax - v) / (vmax - vmin) * gh; }, sx = function (r) { return gx + r / cR * gw; };
+    var gx = 330, gw = 155, gy0 = 40, gh = 200, sy = function (v) { return gy0 + (vmax - v) / (vmax - vmin) * gh; }, sx = function (r) { return gx + r / cR * gw; };
     s.text(gx + gw / 2, 12, T('stress across the wall'), { fill: c.muted, 'font-size': 11 });
     s.line(gx, sy(0), gx + gw, sy(0), { stroke: c.muted, 'stroke-width': 0.8 });
     s.line(sx(b), gy0, sx(b), gy0 + gh, { stroke: c.muted, 'stroke-width': 0.8, 'stroke-dasharray': '3 3' });
