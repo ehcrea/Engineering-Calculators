@@ -811,7 +811,7 @@
       var dark = getComputedStyle(document.documentElement).getPropertyValue('color-scheme').trim() === 'dark';
       var next = dark ? 'light' : 'dark';
       document.documentElement.dataset.theme = next;
-      try { localStorage.setItem('pec:v1:theme', next); } catch (e) { /* ignore */ }
+      try { localStorage.setItem('ehcrea.theme', next); } catch (e) { /* ignore */ }
       drawCharts();
       drawPreview();
     };

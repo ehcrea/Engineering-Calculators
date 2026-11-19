@@ -38,10 +38,11 @@
   <link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
   <link rel="manifest" href="../../site.webmanifest">
   <meta name="apple-mobile-web-app-title" content="PE Calculators">
-  <meta name="theme-color" content="#1f5ea8">
+  <meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f1216" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="../../css/style.css">
   <script>
-    try { var t = localStorage.getItem('pec:v1:theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+    try { var t = localStorage.getItem('ehcrea.theme') || localStorage.getItem('pec:v1:theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
     try { var l = localStorage.getItem('pec:v1:lang'); if (l) document.documentElement.lang = l; } catch (e) {}
   </script>
 </head>
