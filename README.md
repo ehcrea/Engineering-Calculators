@@ -71,6 +71,18 @@ npm test                      # formula checks against hand calculations (Node, 
 
 Opening `index.html` directly from disk also works.
 
+## Install as an app and use it offline
+
+The calculator is a Progressive Web App: after the first visit it works without an internet connection, in every language and in light and dark mode.
+
+- **Chrome or Edge (macOS, Windows, Linux):** click the install icon at the right of the address bar, or menu › *Cast, save and share* › *Install page as app*.
+- **Safari on macOS (Sonoma or later):** *File* › *Add to Dock*.
+- **iPhone / iPad:** Share › *Add to Home Screen*. **Android:** menu › *Install app*.
+
+Updates install themselves: when you are online the newest version is always loaded, and the offline copy is refreshed in the background.
+
+**Maintainers:** `sw.js` is generated. After changing, adding or removing any file of the site, run `node tools/build-sw.js` and commit `sw.js` (the cache version is a hash of all files, so this is what makes the update reach installed copies). The tests fail if it is out of date (`node tools/build-sw.js --check`).
+
 ## Deploy
 
 `.github/workflows/pages.yml` runs the tests and publishes the site to GitHub Pages on every push to

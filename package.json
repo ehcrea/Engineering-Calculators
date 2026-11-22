@@ -4,7 +4,7 @@
   "private": true,
   "description": "Static web calculators for precision mechanical design, based on JPE Precision Point formulas.",
   "scripts": {
-    "test": "node tests/run-tests.js",
+    "test": "node tests/run-tests.js && node tools/build-sw.js --check",
     "start": "python3 -m http.server 8000"
   },
   "license": "MIT"
