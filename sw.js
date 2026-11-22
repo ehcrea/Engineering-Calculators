@@ -10,7 +10,7 @@
  *   the cache.
  */
 'use strict';
-const CACHE = "engineering-calculators-7af2b115c4ac";
+const CACHE = "engineering-calculators-191cb4967331";
 const PREFIX = "engineering-calculators-";
 const FILES = [
   "beam-bending/",
@@ -66,11 +66,12 @@ const FILES = [
   "flexure-hinge/",
   "folded-leaf-spring/",
   "hertz-contact/",
-  "icons/apple-touch-icon.png",
+  "icons/app-icon-180.png",
+  "icons/app-icon-192.png",
+  "icons/app-icon-512.png",
+  "icons/app-icon-maskable-512.png",
+  "icons/app-icon.svg",
   "icons/favicon.svg",
-  "icons/icon-192.png",
-  "icons/icon-512.png",
-  "icons/icon-maskable-512.png",
   "impact-force/",
   "./",
   "js/app.js",
