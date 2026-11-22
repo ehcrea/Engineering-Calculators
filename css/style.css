@@ -279,3 +279,7 @@ dialog::backdrop { background: rgb(0 0 0 / .35); }
   .card { border: 0; padding: 0; }
   .grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* Theme switch: square icon button with the icon exactly centred (same in every ehcrea calculator). */
+.topbar #btnTheme { width: 34px; height: 34px; padding: 0; justify-content: center; flex: none; }
+@media (max-width: 480px) { .topbar #btnTheme { width: 33px; height: 33px; } }
