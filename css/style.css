@@ -263,7 +263,7 @@ dialog::backdrop { background: rgb(0 0 0 / .35); }
   table.results td.val { white-space: normal; overflow-wrap: normal; }
   .calc-actions:not(.open) .secondary { display: none; }
 }
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .topbar { gap: 6px; padding: 10px 8px; }
   .topbar .toolbar { gap: 4px; }
   .topbar .btn { padding: 6px 7px; }
