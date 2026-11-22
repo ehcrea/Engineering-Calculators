@@ -10,7 +10,7 @@
  *   the cache.
  */
 'use strict';
-const CACHE = "engineering-calculators-bf287e162c5c";
+const CACHE = "engineering-calculators-6cb72eacfdad";
 const PREFIX = "engineering-calculators-";
 const FILES = [
   "beam-bending/",
