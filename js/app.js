@@ -953,3 +953,99 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 })();
+
+// Google Analytics 4 (one property and stream for all ehcrea calculators on ehcrea.github.io)
+// plus a short "Privacy" section on the About page with an off switch. Texts in EN/DE/NL/TR/ES.
+// - Loads only on ehcrea.github.io, and never when the browser sends Do Not Track / Global
+//   Privacy Control or the visitor turned analytics off (localStorage "ehcrea.analytics" = "off").
+// - Only origin + path is reported: ?query and #hash can hold saved inputs and share links.
+// - Offline the gtag request simply fails; the service worker does not handle it.
+(function () {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return;
+  var ID = 'G-0SRRQJ1BBN', KEY = 'ehcrea.analytics';
+  var TEXT = {
+    en: { title: 'Privacy', body: 'This site uses Google Analytics to count visits and see which calculators are used. Only the page address is sent, without your inputs or results, which stay on your device. Advertising features are off, and Google Analytics does not store IP addresses. Analytics is skipped when your browser sends Do Not Track or Global Privacy Control.', off: 'Turn off analytics on this device', on: 'Turn analytics back on', isOff: 'Analytics is off on this device.', browser: 'Your browser asks not to be tracked, so analytics is off.' },
+    de: { title: 'Datenschutz', body: 'Diese Seite verwendet Google Analytics, um Besuche zu zählen und zu sehen, welche Rechner genutzt werden. Gesendet wird nur die Seitenadresse, ohne Ihre Eingaben oder Ergebnisse; diese bleiben auf Ihrem Gerät. Werbefunktionen sind ausgeschaltet, und Google Analytics speichert keine IP-Adressen. Sendet Ihr Browser „Do Not Track“ oder „Global Privacy Control“, wird Analytics nicht geladen.', off: 'Analytics auf diesem Gerät ausschalten', on: 'Analytics wieder einschalten', isOff: 'Analytics ist auf diesem Gerät ausgeschaltet.', browser: 'Ihr Browser bittet darum, nicht verfolgt zu werden, daher ist Analytics ausgeschaltet.' },
+    nl: { title: 'Privacy', body: 'Deze site gebruikt Google Analytics om bezoeken te tellen en te zien welke calculators worden gebruikt. Alleen het paginaadres wordt verstuurd, zonder je invoer of resultaten; die blijven op je apparaat. Advertentiefuncties staan uit en Google Analytics slaat geen IP-adressen op. Als je browser Do Not Track of Global Privacy Control meestuurt, wordt Analytics niet geladen.', off: 'Analytics uitzetten op dit apparaat', on: 'Analytics weer aanzetten', isOff: 'Analytics staat uit op dit apparaat.', browser: 'Je browser vraagt om niet gevolgd te worden, dus Analytics staat uit.' },
+    tr: { title: 'Gizlilik', body: 'Bu site, ziyaretleri saymak ve hangi hesaplayıcıların kullanıldığını görmek için Google Analytics kullanır. Yalnızca sayfa adresi gönderilir; girdileriniz ve sonuçlarınız gönderilmez, cihazınızda kalır. Reklam özellikleri kapalıdır ve Google Analytics IP adreslerini saklamaz. Tarayıcınız Do Not Track veya Global Privacy Control gönderirse Analytics yüklenmez.', off: 'Bu cihazda analitiği kapat', on: 'Analitiği yeniden aç', isOff: 'Bu cihazda analitik kapalı.', browser: 'Tarayıcınız izlenmemeyi istediği için analitik kapalı.' },
+    es: { title: 'Privacidad', body: 'Este sitio usa Google Analytics para contar visitas y ver qué calculadoras se usan. Solo se envía la dirección de la página, sin tus datos ni resultados, que se quedan en tu dispositivo. Las funciones publicitarias están desactivadas y Google Analytics no almacena direcciones IP. Si tu navegador envía Do Not Track o Global Privacy Control, Analytics no se carga.', off: 'Desactivar la analítica en este dispositivo', on: 'Volver a activar la analítica', isOff: 'La analítica está desactivada en este dispositivo.', browser: 'Tu navegador pide no ser rastreado, así que la analítica está desactivada.' }
+  };
+  function lang() { var l = (document.documentElement.lang || 'en').slice(0, 2).toLowerCase(); return TEXT[l] ? l : 'en'; }
+  function tx(k) { return TEXT[lang()][k]; }
+  function stored() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function store(v) { try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch (e) { /* private mode */ } }
+  function browserOptOut() { return navigator.globalPrivacyControl === true || navigator.doNotTrack === '1' || window.doNotTrack === '1'; }
+  function url() { return location.origin + location.pathname; }
+
+  var loaded = false, lastPath = null;
+  function pageView() {
+    if (!loaded || window['ga-disable-' + ID] || location.pathname === lastPath) return;
+    lastPath = location.pathname;
+    window.gtag('set', { page_location: url() });
+    window.gtag('event', 'page_view', { page_location: url(), page_title: document.title });
+  }
+  function load() {
+    if (loaded || location.hostname !== 'ehcrea.github.io' || stored() === 'off' || browserOptOut()) return;
+    loaded = true;
+    window['ga-disable-' + ID] = false;
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', ID, { send_page_view: false, page_location: url(), allow_google_signals: false, allow_ad_personalization_signals: false });
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + ID;
+    document.head.appendChild(s);
+    // The apps move between calculator pages with history.pushState/replaceState.
+    ['pushState', 'replaceState'].forEach(function (m) {
+      var orig = history[m];
+      if (typeof orig !== 'function') return;
+      history[m] = function () { var r = orig.apply(this, arguments); setTimeout(pageView, 0); return r; };
+    });
+    window.addEventListener('popstate', pageView);
+    pageView();
+  }
+  function setOff(off) {
+    store(off ? 'off' : null);
+    window['ga-disable-' + ID] = off;
+    if (!off) { if (loaded) { lastPath = null; pageView(); } else load(); }
+    render();
+  }
+
+  function addStyle() {
+    if (document.getElementById('privacy-note-style')) return;
+    var s = document.createElement('style');
+    s.id = 'privacy-note-style';
+    s.textContent =
+      '.privacy-note{margin:1rem 0;padding:.85rem 1rem;border:1px solid var(--border, var(--line, #c9ced6));border-radius:var(--radius, 10px)}' +
+      '.privacy-note h3{margin:0 0 .4rem;font-size:1rem}.privacy-note p{margin:.35rem 0}' +
+      '.privacy-note .privacy-toggle{margin-top:.25rem;padding:.4rem .85rem;border:1px solid var(--border-strong, var(--border, var(--line, #8a929e)));border-radius:999px;font:inherit;cursor:pointer;background:transparent;color:inherit}' +
+      '.privacy-note .privacy-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}';
+    document.head.appendChild(s);
+  }
+  function render() {
+    var anchor = document.querySelector('.about-support');
+    if (!anchor) return;
+    var off = stored() === 'off', browser = browserOptOut();
+    var state = lang() + '|' + (browser ? 'browser' : off ? 'off' : 'on');
+    var box = anchor.parentNode.querySelector(':scope > .privacy-note');
+    if (box && box.dataset.state === state) return;
+    addStyle();
+    if (!box) { box = document.createElement('section'); box.className = 'privacy-note'; anchor.parentNode.insertBefore(box, anchor.nextSibling); }
+    box.dataset.state = state;
+    var html = '<h3>' + tx('title') + '</h3><p>' + tx('body') + '</p>';
+    if (browser) html += '<p>' + tx('browser') + '</p>';
+    else html += (off ? '<p>' + tx('isOff') + '</p>' : '') + '<button type="button" class="privacy-toggle">' + tx(off ? 'on' : 'off') + '</button>';
+    box.innerHTML = html;
+    var btn = box.querySelector('.privacy-toggle');
+    if (btn) btn.addEventListener('click', function () { setOff(!off); var b = box.querySelector('.privacy-toggle'); if (b) b.focus(); });
+  }
+  function start() {
+    load();
+    render();
+    new MutationObserver(render).observe(document.body, { childList: true, subtree: true });
+    new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
